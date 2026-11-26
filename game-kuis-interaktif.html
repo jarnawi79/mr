@@ -62,6 +62,20 @@ button,select,textarea,input{font:inherit;color:inherit}
 .field.full{grid-column:1/-1}
 .field label{font-weight:700;font-size:.92rem}
 .field select,.field textarea{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:11px 12px;min-height:46px;width:100%}
+.field input[type=text]{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:11px 12px;min-height:46px;width:100%}
+.field input[type=text]:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.custom-panel{border:2px dashed var(--accent);border-radius:var(--radius);padding:16px;background:var(--surface)}
+.custom-panel h3{margin:0}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap}
+.btn-row .btn{min-height:42px;padding:9px 14px;font-size:.92rem}
+.howto{background:var(--surface-2);border-radius:12px;padding:10px 14px;font-size:.92rem}
+.howto summary{cursor:pointer;font-weight:700}
+.howto ol{margin:8px 0 0;padding-left:20px}
+.howto li{margin-bottom:6px}
+.share-box{background:var(--accent-soft);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.share-box p{margin:0}
+#shareOut{display:flex;flex-direction:column;gap:8px}
+#shareOut[hidden]{display:none}
 .field textarea{min-height:220px;font-family:ui-monospace,Consolas,monospace;font-size:.9rem;resize:vertical}
 .hint{font-size:.85rem;color:var(--muted)}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
@@ -153,11 +167,13 @@ button,select,textarea,input{font:inherit;color:inherit}
     <div class="card hero">
       <div class="emoji-row" aria-hidden="true">🧠📚🏆</div>
       <h1 id="homeTitle">Kuis Seru Belajar</h1>
-      <p>Game kuis pilihan ganda untuk PAUD/TK, SD, SMP, SMA, dan SMK. Pilih jenjang, kelas, mata pelajaran, dan materi — lalu jawab soal sebelum waktunya habis!</p>
-      <ul class="feature-list">
-        <li>⏱️ Timer tiap soal</li><li>✅ Skor otomatis</li><li>💡 Pembahasan</li><li>📊 Progres</li><li>✍️ Soal buatan guru</li>
+      <p id="homeDesc">Game kuis pilihan ganda untuk PAUD/TK, SD, SMP, SMA, dan SMK — semua mata pelajaran. Pilih jenjang, kelas, mata pelajaran, dan materi, lalu jawab soal sebelum waktunya habis!</p>
+      <ul class="feature-list" id="homeFeatures">
+        <li>⏱️ Timer tiap soal</li><li>✅ Skor otomatis</li><li>💡 Pembahasan</li><li>📊 Progres</li><li>✍️ Soal buatan guru</li><li>🔗 Bagikan ke siswa</li>
       </ul>
+      <div class="notice error" id="homeError" hidden></div>
       <button class="btn big" id="btnHomeStart">▶ Mulai</button>
+      <div style="margin-top:14px"><button class="btn secondary" id="btnFree" hidden>Mode latihan bebas</button></div>
     </div>
   </section>
 
@@ -177,6 +193,8 @@ button,select,textarea,input{font:inherit;color:inherit}
         <div class="field">
           <label for="selMapel">Mata Pelajaran</label>
           <select id="selMapel"></select>
+          <input id="inpMapel" type="text" placeholder="Ketik nama mata pelajaran" maxlength="60" hidden>
+          <span class="hint">⭐ = sudah ada soal bawaan. Semua mapel bisa memakai soal buatan guru.</span>
         </div>
         <div class="field">
           <label for="selMateri">Materi</label>
@@ -186,7 +204,7 @@ button,select,textarea,input{font:inherit;color:inherit}
         <div class="field">
           <label id="lblJumlah">Jumlah Soal</label>
           <div class="chips" role="group" aria-labelledby="lblJumlah" id="chipJumlah">
-            <button class="chip" data-v="10">10</button><button class="chip" data-v="15">15</button><button class="chip" data-v="20">20</button>
+            <button class="chip" data-v="10">10</button><button class="chip" data-v="15">15</button><button class="chip" data-v="20">20</button><button class="chip" data-v="0" id="chipAll" hidden>Semua</button>
           </div>
         </div>
         <div class="field">
@@ -195,11 +213,51 @@ button,select,textarea,input{font:inherit;color:inherit}
             <button class="chip" data-v="1">Mudah</button><button class="chip" data-v="2">Sedang</button><button class="chip" data-v="3">Sulit</button>
           </div>
         </div>
-        <div class="field full" id="customBox" hidden>
-          <label for="txtCustom">Tulis atau tempel soal Anda</label>
-          <textarea id="txtCustom" spellcheck="false"></textarea>
-          <span class="hint">Format: pertanyaan, 4 pilihan (A–D), baris <b>Kunci:</b>, dan baris <b>Pembahasan:</b>. Pisahkan setiap soal dengan satu baris kosong. Soal tersimpan otomatis di browser ini.</span>
-          <div><button class="btn secondary" id="btnContoh" type="button">Isi contoh format</button></div>
+        <div class="field full custom-panel" id="customBox" hidden>
+          <h3>✍️ Soal Buatan Guru</h3>
+          <div class="form-grid">
+            <div class="field">
+              <label for="inpJudul">Judul kuis</label>
+              <input id="inpJudul" type="text" maxlength="80" placeholder="Contoh: Ulangan Harian Bab 2">
+            </div>
+            <div class="field">
+              <label for="selWaktu">Waktu per soal</label>
+              <select id="selWaktu">
+                <option value="0">Otomatis (sesuai jenjang)</option><option value="20">20 detik</option><option value="30">30 detik</option><option value="45">45 detik</option><option value="60">60 detik</option><option value="90">90 detik</option><option value="120">2 menit</option><option value="180">3 menit</option>
+              </select>
+            </div>
+          </div>
+          <label for="txtCustom">Tulis, tempel, atau impor soal</label>
+          <textarea id="txtCustom" spellcheck="false" placeholder="Pertanyaan ...&#10;A. ...&#10;B. ...&#10;C. ...&#10;D. ...&#10;Kunci: A&#10;Pembahasan: ..."></textarea>
+          <details class="howto">
+            <summary>📘 Cara mengisi soal (3 pilihan)</summary>
+            <ol>
+              <li><b>Ketik langsung:</b> pertanyaan, pilihan <b>A.</b> sampai <b>D.</b>, baris <b>Kunci: A</b>, dan baris <b>Pembahasan:</b>. Pisahkan tiap soal dengan satu baris kosong.</li>
+              <li><b>Dari Google Sheets / Excel:</b> buat tabel 7 kolom — <i>Pertanyaan, A, B, C, D, Kunci, Pembahasan</i> (satu baris = satu soal). Blok sel-selnya, salin (Ctrl+C), lalu tempel (Ctrl+V) di kotak di atas. Otomatis diubah ke format soal.</li>
+              <li><b>Impor file CSV:</b> di Google Sheets pilih <i>File → Download → CSV</i>; di Excel pilih <i>Save As → CSV</i>. Lalu klik “Impor file CSV”.</li>
+            </ol>
+          </details>
+          <div class="btn-row">
+            <button class="btn secondary" id="btnContoh" type="button">Isi contoh</button>
+            <button class="btn secondary" id="btnImport" type="button">📥 Impor file CSV</button>
+            <button class="btn secondary" id="btnTemplate" type="button">📄 Unduh template</button>
+            <button class="btn secondary" id="btnExport" type="button">💾 Simpan soal (CSV)</button>
+            <input type="file" id="fileImport" accept=".csv,.tsv,.txt,text/csv,text/plain" hidden>
+          </div>
+          <div class="share-box">
+            <b>🔗 Bagikan ke siswa</b>
+            <p class="hint">Buat tautan berisi soal ini. Siswa cukup membuka tautan (misalnya lewat WhatsApp) lalu langsung bermain — tanpa perlu mengetik soal.</p>
+            <button class="btn" id="btnShare" type="button">🔗 Buat Tautan untuk Siswa</button>
+            <div id="shareOut" hidden>
+              <input id="shareUrl" type="text" readonly aria-label="Tautan kuis untuk siswa">
+              <div class="btn-row">
+                <button class="btn secondary" id="btnCopy" type="button">📋 Salin tautan</button>
+                <button class="btn secondary" id="btnWA" type="button">💬 Kirim via WhatsApp</button>
+                <button class="btn secondary" id="btnTry" type="button">👀 Coba sebagai siswa</button>
+              </div>
+              <p class="hint" id="shareNote"></p>
+            </div>
+          </div>
         </div>
       </div>
       <div class="notice" id="setupInfo"></div>
@@ -753,7 +811,15 @@ const TOPICS = [
   { id: 'sma-jaringan', jenjang: ['SMA', 'SMK'], mapel: 'Informatika', materi: 'Jaringan Komputer dan Internet', kelas: '10–11', icon: '🌐', bank: B_JARINGAN },
   { id: 'sma-sel', jenjang: ['SMA'], mapel: 'Biologi', materi: 'Sel', kelas: '11', icon: '🔬', bank: B_SEL }
 ];
-const CUSTOM_MAPEL = '✍️ Soal Buatan Guru';
+/* Daftar mata pelajaran per jenjang (struktur Kurikulum Merdeka). Mapel tanpa soal bawaan memakai soal buatan guru. */
+const LAINNYA = 'Lainnya (ketik sendiri)';
+const MAPEL = {
+  PAUD: ['Nilai Agama dan Budi Pekerti', 'Jati Diri', 'Literasi Awal', 'Matematika Awal', 'Sains Awal', 'Seni'],
+  SD: ['Pendidikan Agama dan Budi Pekerti', 'Pendidikan Pancasila', 'Bahasa Indonesia', 'Matematika', 'IPAS', 'PJOK', 'Seni dan Budaya', 'Bahasa Inggris', 'Muatan Lokal'],
+  SMP: ['Pendidikan Agama dan Budi Pekerti', 'Pendidikan Pancasila', 'Bahasa Indonesia', 'Matematika', 'IPA', 'IPS', 'Bahasa Inggris', 'Informatika', 'Koding dan Kecerdasan Artifisial', 'PJOK', 'Seni dan Budaya', 'Prakarya', 'Muatan Lokal'],
+  SMA: ['Pendidikan Agama dan Budi Pekerti', 'Pendidikan Pancasila', 'Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'Fisika', 'Kimia', 'Biologi', 'Sejarah', 'Geografi', 'Ekonomi', 'Sosiologi', 'Antropologi', 'Informatika', 'Koding dan Kecerdasan Artifisial', 'PJOK', 'Seni dan Budaya', 'Muatan Lokal'],
+  SMK: ['Pendidikan Agama dan Budi Pekerti', 'Pendidikan Pancasila', 'Bahasa Indonesia', 'Matematika', 'Bahasa Inggris', 'Sejarah', 'Informatika', 'Projek IPAS', 'Fisika', 'Dasar-dasar Program Keahlian', 'Konsentrasi Keahlian', 'Projek Kreatif dan Kewirausahaan', 'Koding dan Kecerdasan Artifisial', 'PJOK', 'Seni dan Budaya', 'Muatan Lokal']
+};
 const JENJANG = {
   PAUD: { label: 'PAUD / TK', kelas: ['Kelompok A (4–5 tahun)', 'Kelompok B (5–6 tahun)'], icon: '🧸' },
   SD: { label: 'SD / MI', kelas: [1, 2, 3, 4, 5, 6].map(k => 'Kelas ' + k), icon: '🎒' },
@@ -797,7 +863,13 @@ function show(id) { document.querySelectorAll('.screen').forEach(s => s.classLis
 /* =========================================================
    PENGATURAN
    ========================================================= */
-function mapelList(j) { const m = [...new Set(TOPICS.filter(t => t.jenjang.includes(j)).map(t => t.mapel))]; m.push(CUSTOM_MAPEL); return m; }
+const topicsOf = (j, m) => TOPICS.filter(t => t.jenjang.includes(j) && t.mapel === m);
+function mapelList(j) {
+  const m = MAPEL[j].slice();
+  TOPICS.filter(t => t.jenjang.includes(j)).forEach(t => { if (!m.includes(t.mapel)) m.push(t.mapel); });
+  m.push(LAINNYA); return m;
+}
+const mapelName = () => S.mapel === LAINNYA ? (S.mapelLain || 'Mata pelajaran lain') : S.mapel;
 function fillSelect(sel, items, val) {
   sel.innerHTML = '';
   items.forEach(([v, l]) => { const o = document.createElement('option'); o.value = v; o.textContent = l; sel.appendChild(o); });
@@ -811,34 +883,41 @@ function renderSetup() {
   fillSelect(el('selKelas'), kls.map((k, i) => [i, k]), S.kelasIdx);
   const mp = mapelList(S.jenjang);
   if (!mp.includes(S.mapel)) S.mapel = mp[0];
-  fillSelect(el('selMapel'), mp.map(m => [m, m]), S.mapel);
-  const custom = S.mapel === CUSTOM_MAPEL;
-  if (custom) {
-    fillSelect(el('selMateri'), [['custom', 'Soal yang diketik/ditempel guru']], 'custom');
-    S.topic = 'custom';
-  } else {
-    const tp = TOPICS.filter(t => t.jenjang.includes(S.jenjang) && t.mapel === S.mapel);
-    if (!tp.some(t => t.id === S.topic)) S.topic = tp[0].id;
-    fillSelect(el('selMateri'), tp.map(t => [t.id, t.icon + ' ' + t.materi]), S.topic);
-  }
-  el('selMateri').disabled = custom;
+  fillSelect(el('selMapel'), mp.map(m => [m, m + (topicsOf(S.jenjang, m).length ? ' ⭐' : '')]), S.mapel);
+  el('inpMapel').hidden = S.mapel !== LAINNYA;
+  el('inpMapel').value = S.mapelLain || '';
+  const tp = topicsOf(S.jenjang, S.mapel);
+  const items = tp.map(t => [t.id, t.icon + ' ' + t.materi]);
+  items.push(['custom', '✍️ Soal buatan guru (materi apa saja)']);
+  if (!items.some(([v]) => v === S.topic)) S.topic = items[0][0];
+  fillSelect(el('selMateri'), items, S.topic);
+  const custom = S.topic === 'custom';
   el('customBox').hidden = !custom;
+  el('chipAll').hidden = !custom;
+  if (!custom && S.jumlah === 0) S.jumlah = 10;
+  el('inpJudul').value = S.judul || '';
+  el('selWaktu').value = String(S.waktu || 0);
   const t = TOPICS.find(x => x.id === S.topic);
-  el('materiHint').textContent = custom ? '' : t.gen ? `Soal hitungan dibuat otomatis — selalu baru setiap main.${t.kelas ? ' Disarankan kelas ' + t.kelas + '.' : ''}` : `Bank soal: ${t.bank.length} soal.${t.kelas ? ' Disarankan kelas ' + t.kelas + '.' : ''}`;
+  el('materiHint').textContent = custom ? (tp.length ? 'Ketik, tempel, atau impor soal Anda sendiri.' : 'Belum ada soal bawaan untuk mapel ini. Ketik, tempel dari Google Sheets/Excel, atau impor soal Anda sendiri.') : t.gen ? `Soal hitungan dibuat otomatis — selalu baru setiap main.${t.kelas ? ' Disarankan kelas ' + t.kelas + '.' : ''}` : `Bank soal: ${t.bank.length} soal.${t.kelas ? ' Disarankan kelas ' + t.kelas + '.' : ''}`;
   document.querySelectorAll('#chipJumlah .chip').forEach(c => c.setAttribute('aria-pressed', String(+c.dataset.v === S.jumlah)));
   document.querySelectorAll('#chipSulit .chip').forEach(c => c.setAttribute('aria-pressed', String(+c.dataset.v === S.sulit)));
   el('chipSulit').closest('.field').style.opacity = custom ? .5 : 1;
   updateInfo();
   store.set('kuis-setting', S);
 }
-function timePerQ() { return ({ 1: 30, 2: 45, 3: 60 })[S.sulit] + (S.jenjang === 'PAUD' ? 20 : S.jenjang === 'SD' ? 10 : 0); }
+const autoTime = (j, d) => ({ 1: 30, 2: 45, 3: 60 })[d] + (j === 'PAUD' ? 20 : j === 'SD' ? 10 : 0);
+function timePerQ() {
+  if (PAKET) return PAKET.w || autoTime(PAKET.j, 2);
+  if (S.topic === 'custom') return S.waktu || autoTime(S.jenjang, 2);
+  return autoTime(S.jenjang, S.sulit);
+}
 function updateInfo() {
   const info = el('setupInfo'); info.classList.remove('error');
   const lv = ['', 'Mudah', 'Sedang', 'Sulit'][S.sulit];
   if (S.topic === 'custom') {
     const r = parseCustom(el('txtCustom').value);
     if (r.errors.length) { info.classList.add('error'); info.innerHTML = '⚠️ ' + r.errors.slice(0, 4).map(esc).join('<br>⚠️ '); return; }
-    info.textContent = `✅ ${r.items.length} soal terbaca. Permainan memakai ${Math.min(r.items.length, S.jumlah)} soal, ⏱️ ${timePerQ()} detik per soal.`;
+    info.textContent = `✅ ${r.items.length} soal terbaca. Permainan memakai ${S.jumlah ? Math.min(r.items.length, S.jumlah) : r.items.length} soal (urutan diacak), ⏱️ ${timePerQ()} detik per soal.`;
     return;
   }
   const t = TOPICS.find(x => x.id === S.topic), n = t.bank ? Math.min(t.bank.length, S.jumlah) : S.jumlah;
@@ -867,9 +946,124 @@ function parseCustom(text) {
     if (['A', 'B', 'C', 'D'].some(k => !opts[k])) return errors.push(`Soal ${n}: pilihan A, B, C, dan D harus lengkap.`);
     if (!key) return errors.push(`Soal ${n}: baris “Kunci: A/B/C/D” belum ada.`);
     const order = ['A', 'B', 'C', 'D'];
-    items.push({ q: q.join('\n'), opts: [opts[key], ...order.filter(k => k !== key).map(k => opts[k])], exp: exp || `Jawaban yang benar adalah ${key}. ${opts[key]}.` });
+    items.push({ q: q.join('\n'), opts: [opts[key], ...order.filter(k => k !== key).map(k => opts[k])], exp: exp || `Jawaban yang benar: ${opts[key]}.`,
+      raw: [q.join(' '), opts.A, opts.B, opts.C, opts.D, key, exp] });
   });
   return { items, errors };
+}
+
+/* ---------- Tabel (Google Sheets / Excel / CSV) ---------- */
+function detectDelim(text) {
+  const line = text.split(/\r?\n/).find(l => l.trim()) || '';
+  if (line.includes('\t')) return '\t';
+  return (line.split(';').length > line.split(',').length) ? ';' : ',';
+}
+function parseDelimited(text, delim) {
+  const rows = []; let row = [], cell = '', inQ = false;
+  text = text.replace(/^﻿/, '').replace(/^sep=.\r?\n/i, '');
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQ) {
+      if (ch === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else inQ = false; }
+      else cell += ch;
+    } else if (ch === '"' && cell === '') inQ = true;
+    else if (ch === delim) { row.push(cell); cell = ''; }
+    else if (ch === '\n' || ch === '\r') { if (ch === '\r' && text[i + 1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; }
+    else cell += ch;
+  }
+  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter(r => r.some(c => c.trim()));
+}
+function rowsToText(rows) {
+  if (rows.length && /^(pertanyaan|soal)\b/i.test((rows[0][0] || '').trim())) rows = rows.slice(1);
+  return rows.map(r => {
+    const c = i => (r[i] || '').replace(/\s*\n\s*/g, ' ').trim();
+    let key = c(5).toUpperCase().replace(/[^A-D1-4]/g, '').charAt(0);
+    if (/[1-4]/.test(key)) key = 'ABCD'[+key - 1];
+    return `${c(0)}\nA. ${c(1)}\nB. ${c(2)}\nC. ${c(3)}\nD. ${c(4)}\nKunci: ${key}\nPembahasan: ${c(6)}`;
+  }).join('\n\n');
+}
+function toCSV(rows) {
+  return '﻿' + rows.map(r => r.map(v => { v = String(v ?? ''); return /[;"\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(';')).join('\r\n');
+}
+function download(name, text, type) {
+  try {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type }));
+    a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  } catch (e) { alert('Browser ini tidak mengizinkan unduhan.'); }
+}
+const CSV_HEAD = ['Pertanyaan', 'A', 'B', 'C', 'D', 'Kunci', 'Pembahasan'];
+function setCustomText(t) { el('txtCustom').value = t; store.set('kuis-custom', t); updateInfo(); el('shareOut').hidden = true; }
+
+/* ---------- Paket soal untuk dibagikan lewat tautan ---------- */
+let PAKET = null;
+const b64u = bytes => { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+const unb64u = str => { const s = atob(str.replace(/-/g, '+').replace(/_/g, '/')); const b = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i); return b; };
+async function encodePaket(obj) {
+  const bytes = new TextEncoder().encode(JSON.stringify(obj));
+  if ('CompressionStream' in window) {
+    try {
+      const st = new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate'));
+      return 'z' + b64u(new Uint8Array(await new Response(st).arrayBuffer()));
+    } catch (e) {}
+  }
+  return 'j' + b64u(bytes);
+}
+async function decodePaket(code) {
+  let bytes = unb64u(code.slice(1));
+  if (code[0] === 'z') {
+    if (!('DecompressionStream' in window)) throw new Error('old-browser');
+    const st = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate'));
+    bytes = new Uint8Array(await new Response(st).arrayBuffer());
+  } else if (code[0] !== 'j') throw new Error('format');
+  const p = JSON.parse(new TextDecoder().decode(bytes));
+  if (!p || !Array.isArray(p.q) || !p.q.length || p.q.some(x => !Array.isArray(x[1]) || x[1].length !== 4 || !(x[2] >= 0 && x[2] < 4))) throw new Error('isi');
+  if (!JENJANG[p.j]) p.j = 'SMP';
+  return p;
+}
+function paketFromSetup() {
+  const r = parseCustom(el('txtCustom').value);
+  if (r.errors.length || !r.items.length) return null;
+  return { v: 1, t: S.judul || 'Kuis ' + mapelName(), j: S.jenjang, k: JENJANG[S.jenjang].kelas[S.kelasIdx], m: mapelName(), w: S.waktu || 0, n: S.jumlah || 0,
+    q: r.items.map(it => { const o = shuffle([0, 1, 2, 3]); return [it.q, o.map(i => it.opts[i]), o.indexOf(0), it.exp]; }) };
+}
+async function makeShareLink() {
+  const p = paketFromSetup();
+  if (!p) { updateInfo(); el('setupInfo').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+  const url = location.href.split('#')[0] + '#soal=' + await encodePaket(p);
+  el('shareUrl').value = url; el('shareOut').hidden = false;
+  const notes = [`Tautan berisi ${p.q.length} soal “${p.t}”. Jika soal diubah, buat tautan baru.`];
+  if (location.protocol === 'file:') notes.push('⚠️ Game sedang dibuka dari file di komputer, sehingga tautan ini hanya berfungsi di perangkat ini. Agar bisa dibuka siswa, buka game dari alamat web (GitHub Pages), lalu buat tautan dari sana.');
+  if (url.length > 8000) notes.push('⚠️ Tautan cukup panjang. Jika tidak bisa dibuka di HP siswa, bagi soal menjadi dua paket.');
+  el('shareNote').textContent = notes.join(' ');
+}
+async function copyText(t) {
+  try { await navigator.clipboard.writeText(t); return true; }
+  catch (e) { const i = el('shareUrl'); i.select(); try { return document.execCommand('copy'); } catch (x) { return false; } }
+}
+function enterPaketHome() {
+  const p = PAKET;
+  document.documentElement.dataset.jenjang = p.j;
+  const n = p.n ? Math.min(p.n, p.q.length) : p.q.length;
+  el('homeTitle').textContent = p.t;
+  el('homeDesc').textContent = `${p.m} · ${p.k} · ${n} soal · ⏱️ ${timePerQ()} detik per soal. Baca soal dengan teliti, lalu pilih jawaban yang paling tepat. Selamat mengerjakan!`;
+  el('homeFeatures').hidden = true;
+  el('btnHomeStart').textContent = '▶ Mulai Kuis';
+  el('btnFree').hidden = false;
+  el('btnSettings').textContent = '🏠 Halaman Awal';
+}
+async function loadFromHash() {
+  const m = location.hash.match(/^#soal=([A-Za-z0-9_-]+)/);
+  if (!m) return;
+  try { PAKET = await decodePaket(m[1]); enterPaketHome(); }
+  catch (e) {
+    el('homeError').hidden = false;
+    el('homeError').textContent = e.message === 'old-browser'
+      ? '⚠️ Browser ini terlalu lama untuk membuka kuis dari guru. Coba perbarui Chrome atau gunakan browser lain.'
+      : '⚠️ Tautan soal tidak dapat dibaca. Pastikan tautan disalin lengkap dari guru.';
+  }
 }
 
 /* =========================================================
@@ -878,8 +1072,14 @@ function parseCustom(text) {
 function buildQuestions() {
   const n = S.jumlah, d = S.sulit, kelasNum = S.jenjang === 'PAUD' ? 0 : parseInt(JENJANG[S.jenjang].kelas[S.kelasIdx].replace(/\D/g, ''), 10);
   let raw = [];
+  if (PAKET) {
+    return shuffle(PAKET.q).slice(0, PAKET.n || PAKET.q.length).map(([q, opts, ans, exp]) => {
+      const o = shuffle([0, 1, 2, 3]);
+      return { q, img: '', exp: exp || 'Jawaban yang benar: ' + opts[ans] + '.', options: o.map(i => opts[i]), answer: o.indexOf(ans) };
+    });
+  }
   if (S.topic === 'custom') {
-    raw = shuffle(parseCustom(el('txtCustom').value).items).slice(0, n);
+    raw = shuffle(parseCustom(el('txtCustom').value).items).slice(0, n || undefined);
   } else {
     const t = TOPICS.find(x => x.id === S.topic);
     if (t.gen) {
@@ -907,16 +1107,17 @@ function buildQuestions() {
    PERMAINAN
    ========================================================= */
 function startGame() {
-  if (S.topic === 'custom') {
+  if (!PAKET && S.topic === 'custom') {
     const r = parseCustom(el('txtCustom').value);
     if (r.errors.length || !r.items.length) { updateInfo(); el('setupInfo').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
   }
   const qs = buildQuestions();
   if (!qs.length) return;
-  const t = TOPICS.find(x => x.id === S.topic);
+  const t = TOPICS.find(x => x.id === S.topic), j = PAKET ? PAKET.j : S.jenjang;
   G = { qs, idx: 0, benar: 0, salah: 0, habis: 0, log: [], start: Date.now(), limit: timePerQ(),
-    kecil: S.jenjang === 'PAUD' || S.jenjang === 'SD',
-    title: (t ? t.icon + ' ' + t.mapel + ' · ' + t.materi : CUSTOM_MAPEL) + ' · ' + JENJANG[S.jenjang].kelas[S.kelasIdx] };
+    kecil: j === 'PAUD' || j === 'SD',
+    title: PAKET ? `✍️ ${PAKET.m} · ${PAKET.t} · ${PAKET.k}`
+      : (S.topic === 'custom' ? `✍️ ${mapelName()}${S.judul ? ' · ' + S.judul : ''}` : t.icon + ' ' + t.mapel + ' · ' + t.materi) + ' · ' + JENJANG[S.jenjang].kelas[S.kelasIdx] };
   el('topicTag').textContent = G.title;
   el('btnSpeak').hidden = !G.kecil || !('speechSynthesis' in window);
   el('dots').innerHTML = qs.map(() => '<span class="dot"></span>').join('');
@@ -946,7 +1147,7 @@ function renderQ() {
   el('feedback').className = 'feedback'; el('feedback').innerHTML = '';
   el('btnNext').hidden = true;
   startTimer();
-  if (S.jenjang === 'PAUD' && el('btnSpeak').hidden === false) speak();
+  if (document.documentElement.dataset.jenjang === 'PAUD' && el('btnSpeak').hidden === false) speak();
 }
 
 function startTimer() {
@@ -1078,7 +1279,8 @@ function speak() {
 /* =========================================================
    EVENT
    ========================================================= */
-el('btnHomeStart').onclick = () => { renderSetup(); show('scrSetup'); };
+el('btnHomeStart').onclick = () => { if (PAKET) return startGame(); renderSetup(); show('scrSetup'); };
+el('btnFree').onclick = () => { location.href = location.href.split('#')[0]; };
 el('btnBackHome').onclick = () => show('scrHome');
 el('selJenjang').onchange = e => { S.jenjang = e.target.value; S.kelasIdx = 0; if (S.jenjang === 'PAUD' && S.jumlah > 10) S.jumlah = 10; renderSetup(); };
 el('selKelas').onchange = e => { S.kelasIdx = +e.target.value; renderSetup(); };
@@ -1087,14 +1289,49 @@ el('selMateri').onchange = e => { S.topic = e.target.value; renderSetup(); };
 el('chipJumlah').onclick = e => { const c = e.target.closest('.chip'); if (c) { S.jumlah = +c.dataset.v; renderSetup(); } };
 el('chipSulit').onclick = e => { const c = e.target.closest('.chip'); if (c) { S.sulit = +c.dataset.v; renderSetup(); } };
 el('txtCustom').value = store.get('kuis-custom', '');
-el('txtCustom').oninput = () => { store.set('kuis-custom', el('txtCustom').value); updateInfo(); };
-el('btnContoh').onclick = () => { el('txtCustom').value = CONTOH_CUSTOM; store.set('kuis-custom', CONTOH_CUSTOM); updateInfo(); };
+el('txtCustom').oninput = () => { store.set('kuis-custom', el('txtCustom').value); updateInfo(); el('shareOut').hidden = true; };
+el('txtCustom').addEventListener('paste', e => {
+  const t = (e.clipboardData || window.clipboardData).getData('text');
+  if (!t || !t.includes('\t')) return;            // salinan tabel dari Google Sheets/Excel
+  e.preventDefault();
+  const conv = rowsToText(parseDelimited(t, '\t')), ta = el('txtCustom');
+  const before = ta.value.slice(0, ta.selectionStart).replace(/\s*$/, ''), after = ta.value.slice(ta.selectionEnd).replace(/^\s*/, '');
+  setCustomText([before, conv, after].filter(Boolean).join('\n\n'));
+});
+el('btnContoh').onclick = () => { if (!el('txtCustom').value.trim() || confirm('Ganti soal yang ada dengan contoh?')) setCustomText(CONTOH_CUSTOM); };
+el('btnImport').onclick = () => el('fileImport').click();
+el('fileImport').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    const txt = String(rd.result), tabular = /\.(csv|tsv)$/i.test(f.name) || /[\t;,]/.test(txt.split(/\r?\n/)[0]) && !/^\s*[A-D][.)]/m.test(txt);
+    const conv = tabular ? rowsToText(parseDelimited(txt, detectDelim(txt))) : txt;
+    const cur = el('txtCustom').value.trim();
+    setCustomText(cur && !confirm('Ganti soal yang sudah ada? (Pilih "Batal" untuk menambahkan di bawahnya)') ? cur + '\n\n' + conv : conv);
+  };
+  rd.readAsText(f, 'UTF-8'); e.target.value = '';
+};
+el('btnTemplate').onclick = () => download('template-soal-kuis.csv', toCSV([CSV_HEAD,
+  ['Ibu kota Provinsi Bengkulu adalah ...', 'Bengkulu', 'Padang', 'Palembang', 'Jambi', 'A', 'Ibu kota Provinsi Bengkulu adalah Kota Bengkulu.'],
+  ['Hasil dari 12 × 3 adalah ...', '15', '36', '32', '9', 'B', '12 × 3 = 36.']]), 'text/csv;charset=utf-8');
+el('btnExport').onclick = () => {
+  const r = parseCustom(el('txtCustom').value);
+  if (!r.items.length) return updateInfo();
+  download((S.judul || 'soal-kuis').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-').toLowerCase() + '.csv', toCSV([CSV_HEAD, ...r.items.map(i => i.raw)]), 'text/csv;charset=utf-8');
+};
+el('inpMapel').oninput = e => { S.mapelLain = e.target.value.trim(); store.set('kuis-setting', S); el('shareOut').hidden = true; };
+el('inpJudul').oninput = e => { S.judul = e.target.value.trim(); store.set('kuis-setting', S); el('shareOut').hidden = true; };
+el('selWaktu').onchange = e => { S.waktu = +e.target.value; store.set('kuis-setting', S); updateInfo(); el('shareOut').hidden = true; };
+el('btnShare').onclick = makeShareLink;
+el('btnCopy').onclick = async () => { const ok = await copyText(el('shareUrl').value); el('btnCopy').textContent = ok ? '✅ Tersalin' : 'Salin manual'; setTimeout(() => el('btnCopy').textContent = '📋 Salin tautan', 2000); };
+el('btnWA').onclick = () => { window.open('https://wa.me/?text=' + encodeURIComponent(`📝 ${S.judul || 'Kuis ' + mapelName()}\nKerjakan kuis di tautan berikut:\n${el('shareUrl').value}`), '_blank', 'noopener'); };
+el('btnTry').onclick = () => { window.open(el('shareUrl').value, '_blank', 'noopener'); };
 el('btnStart').onclick = startGame;
 el('btnNext').onclick = next;
 el('btnSpeak').onclick = speak;
-el('btnQuit').onclick = () => { if (confirm('Keluar dari permainan? Progres soal ini tidak disimpan.')) { clearInterval(timerId); G = null; renderSetup(); show('scrSetup'); } };
+el('btnQuit').onclick = () => { if (confirm('Keluar dari permainan? Progres soal ini tidak disimpan.')) { clearInterval(timerId); G = null; if (PAKET) return show('scrHome'); renderSetup(); show('scrSetup'); } };
 el('btnRetry').onclick = startGame;
-el('btnSettings').onclick = () => { renderSetup(); show('scrSetup'); };
+el('btnSettings').onclick = () => { if (PAKET) return show('scrHome'); renderSetup(); show('scrSetup'); };
 el('btnSound').onclick = () => { soundOn = !soundOn; store.set('kuis-sound', soundOn); el('btnSound').textContent = soundOn ? '🔊' : '🔇'; };
 el('btnSound').textContent = soundOn ? '🔊' : '🔇';
 el('btnTheme').onclick = () => {
@@ -1110,6 +1347,8 @@ document.addEventListener('keydown', e => {
   else if (k === 'ENTER' && G.locked) { e.preventDefault(); next(); }
 });
 document.documentElement.dataset.jenjang = S.jenjang;
+window.addEventListener('hashchange', () => location.reload());
+loadFromHash();
 </script>
 </body>
 </html>
