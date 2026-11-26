@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kuis Seru Belajar</title>
+<style>
+:root{
+  --bg:#f4f6fb; --surface:#ffffff; --surface-2:#eef1f8; --text:#1b2333; --muted:#5d6779; --border:#dbe1ec;
+  --accent:#2f6fde; --accent-ink:#ffffff; --accent-soft:#e3ecfc;
+  --ok:#1f9d55; --ok-soft:#e1f5ea; --bad:#d64545; --bad-soft:#fde8e8; --warn:#d98a00;
+  --radius:16px; --shadow:0 6px 24px rgba(20,30,60,.08);
+  --q-size:1.25rem; --opt-size:1.05rem;
+}
+:root[data-jenjang="PAUD"]{--accent:#e8590c;--accent-soft:#fff0e6;--q-size:1.6rem;--opt-size:1.35rem;--radius:22px}
+:root[data-jenjang="SD"]{--accent:#2b8a3e;--accent-soft:#e6f4ea;--q-size:1.4rem;--opt-size:1.15rem;--radius:20px}
+:root[data-jenjang="SMP"]{--accent:#2f6fde;--accent-soft:#e3ecfc}
+:root[data-jenjang="SMA"]{--accent:#6741d9;--accent-soft:#eee8fc}
+:root[data-jenjang="SMK"]{--accent:#0c8599;--accent-soft:#e2f4f7}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#11151d; --surface:#1a202b; --surface-2:#232b38; --text:#e8ecf3; --muted:#a3adbf; --border:#2f3948;
+    --accent-soft:#243149; --ok:#40c074; --ok-soft:#173326; --bad:#f06a6a; --bad-soft:#3a1d1f; --shadow:0 6px 24px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#11151d; --surface:#1a202b; --surface-2:#232b38; --text:#e8ecf3; --muted:#a3adbf; --border:#2f3948;
+  --accent-soft:#243149; --ok:#40c074; --ok-soft:#173326; --bad:#f06a6a; --bad-soft:#3a1d1f; --shadow:0 6px 24px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font-family:"Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif;line-height:1.5;min-height:100vh}
+.wrap{max-width:780px;margin:0 auto;padding:20px 16px 40px}
+.screen{display:none}
+.screen.active{display:block;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px}
+h1,h2,h3{line-height:1.25;margin:0 0 .5em}
+button,select,textarea,input{font:inherit;color:inherit}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:12px;padding:12px 20px;font-weight:700;cursor:pointer;background:var(--accent);color:var(--accent-ink);min-height:48px;transition:transform .1s,filter .15s}
+.btn:hover{filter:brightness(1.07)}
+.btn:active{transform:scale(.98)}
+.btn:focus-visible,.opt:focus-visible,select:focus-visible,textarea:focus-visible,.icon-btn:focus-visible,.chip:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.btn.secondary{background:var(--surface-2);color:var(--text);border:1px solid var(--border)}
+.btn.big{font-size:1.2rem;padding:16px 34px;border-radius:16px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.icon-btn{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:6px 10px;cursor:pointer;min-height:40px;min-width:40px}
+.topbar{display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px}
+
+/* Halaman pembuka */
+.hero{text-align:center;padding:36px 22px}
+.hero .emoji-row{font-size:3rem;letter-spacing:.2em;margin-bottom:10px;user-select:none}
+.hero h1{font-size:clamp(1.8rem,5vw,2.6rem)}
+.hero p{color:var(--muted);max-width:520px;margin:0 auto 22px}
+.feature-list{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:0 0 26px;padding:0;list-style:none}
+.feature-list li{background:var(--accent-soft);color:var(--text);border-radius:999px;padding:6px 12px;font-size:.9rem}
+
+/* Pengaturan */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field.full{grid-column:1/-1}
+.field label{font-weight:700;font-size:.92rem}
+.field select,.field textarea{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:11px 12px;min-height:46px;width:100%}
+.field textarea{min-height:220px;font-family:ui-monospace,Consolas,monospace;font-size:.9rem;resize:vertical}
+.hint{font-size:.85rem;color:var(--muted)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:2px solid var(--border);background:var(--surface-2);border-radius:12px;padding:9px 16px;cursor:pointer;font-weight:700;min-height:44px}
+.chip[aria-pressed="true"]{border-color:var(--accent);background:var(--accent);color:var(--accent-ink)}
+.notice{background:var(--accent-soft);border-radius:12px;padding:10px 14px;font-size:.92rem;margin-top:14px}
+.notice.error{background:var(--bad-soft);color:var(--text);border-left:4px solid var(--bad)}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;justify-content:space-between}
+
+/* Kuis */
+.quiz-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.topic-tag{font-weight:700;font-size:.92rem;color:var(--muted)}
+.stats{display:flex;gap:8px;flex-wrap:wrap}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px 12px;font-weight:700;font-size:.95rem;white-space:nowrap}
+.progress{height:12px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);overflow:hidden;margin-bottom:6px}
+.progress > div{height:100%;width:0;background:var(--accent);transition:width .35s ease}
+.progress-label{font-size:.88rem;color:var(--muted);margin-bottom:12px;display:flex;justify-content:space-between}
+.dots{display:flex;gap:4px;flex-wrap:wrap}
+.dot{width:12px;height:12px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border)}
+.dot.ok{background:var(--ok);border-color:var(--ok)}
+.dot.bad{background:var(--bad);border-color:var(--bad)}
+.dot.now{border:2px solid var(--accent)}
+.timer{position:relative;height:8px;border-radius:999px;background:var(--surface-2);overflow:hidden;margin:0 0 14px}
+.timer > div{height:100%;width:100%;background:var(--ok);transition:width 1s linear,background .3s}
+.timer.low > div{background:var(--bad)}
+.q-num{font-size:.88rem;font-weight:700;color:var(--accent);margin-bottom:6px}
+.q-text{font-size:var(--q-size);font-weight:700;margin:0 0 14px;white-space:pre-line}
+.q-img{font-size:clamp(2.4rem,9vw,4rem);text-align:center;margin:6px 0 16px;line-height:1.3;word-break:break-word;user-select:none}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.opt{display:flex;align-items:center;gap:12px;text-align:left;background:var(--surface);border:2px solid var(--border);border-radius:14px;padding:12px 14px;cursor:pointer;font-size:var(--opt-size);min-height:60px;transition:border-color .15s,background .15s,transform .1s}
+.opt:hover:not([disabled]){border-color:var(--accent);background:var(--accent-soft)}
+.opt .key{flex:0 0 auto;width:34px;height:34px;border-radius:10px;background:var(--surface-2);display:grid;place-items:center;font-weight:800;font-size:1rem}
+.opt.correct{border-color:var(--ok);background:var(--ok-soft)}
+.opt.correct .key{background:var(--ok);color:#fff}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.opt.wrong .key{background:var(--bad);color:#fff}
+.opt[disabled]{cursor:default}
+.opt.dim{opacity:.55}
+.feedback{margin-top:16px;border-radius:14px;padding:14px 16px;display:none}
+.feedback.show{display:block;animation:fade .2s ease}
+.feedback.ok{background:var(--ok-soft);border-left:5px solid var(--ok)}
+.feedback.bad{background:var(--bad-soft);border-left:5px solid var(--bad)}
+.feedback h3{margin:0 0 6px;font-size:1.15rem}
+.feedback p{margin:4px 0}
+.quiz-foot{display:flex;justify-content:space-between;align-items:center;margin-top:16px;gap:10px;flex-wrap:wrap}
+.kbd-hint{font-size:.8rem;color:var(--muted)}
+
+/* Hasil */
+.result{text-align:center}
+.score-ring{width:170px;height:170px;border-radius:50%;margin:10px auto 14px;display:grid;place-items:center;background:conic-gradient(var(--accent) calc(var(--p)*1%), var(--surface-2) 0)}
+.score-ring > div{width:132px;height:132px;border-radius:50%;background:var(--surface);display:grid;place-items:center;flex-direction:column}
+.score-ring b{font-size:2.8rem;line-height:1}
+.score-ring span{font-size:.85rem;color:var(--muted)}
+.stars{font-size:2rem;letter-spacing:.2em;margin-bottom:4px}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}
+.summary div{background:var(--surface-2);border-radius:12px;padding:10px 6px}
+.summary b{display:block;font-size:1.5rem}
+.summary small{color:var(--muted)}
+.review{text-align:left;margin-top:18px}
+.review details{border:1px solid var(--border);border-radius:12px;padding:10px 14px;margin-bottom:8px;background:var(--surface)}
+.review summary{cursor:pointer;font-weight:600}
+.review .r-ok{color:var(--ok)} .review .r-bad{color:var(--bad)}
+.review p{margin:6px 0;font-size:.95rem}
+.result .actions{justify-content:center}
+.footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:24px}
+.confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:50}
+.confetti i{position:absolute;top:-20px;width:10px;height:14px;border-radius:2px;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+
+@media (max-width:600px){
+  .form-grid{grid-template-columns:1fr}
+  .opts{grid-template-columns:1fr}
+  .summary{grid-template-columns:repeat(2,1fr)}
+  .card{padding:16px}
+  .hero{padding:26px 14px}
+}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <button class="icon-btn" id="btnSound" title="Suara aktif/nonaktif" aria-label="Suara">🔊</button>
+    <button class="icon-btn" id="btnTheme" title="Ganti tema terang/gelap" aria-label="Ganti tema">🌓</button>
+  </div>
+
+  <!-- 1. HALAMAN PEMBUKA -->
+  <section class="screen active" id="scrHome" aria-labelledby="homeTitle">
+    <div class="card hero">
+      <div class="emoji-row" aria-hidden="true">🧠📚🏆</div>
+      <h1 id="homeTitle">Kuis Seru Belajar</h1>
+      <p>Game kuis pilihan ganda untuk PAUD/TK, SD, SMP, SMA, dan SMK. Pilih jenjang, kelas, mata pelajaran, dan materi — lalu jawab soal sebelum waktunya habis!</p>
+      <ul class="feature-list">
+        <li>⏱️ Timer tiap soal</li><li>✅ Skor otomatis</li><li>💡 Pembahasan</li><li>📊 Progres</li><li>✍️ Soal buatan guru</li>
+      </ul>
+      <button class="btn big" id="btnHomeStart">▶ Mulai</button>
+    </div>
+  </section>
+
+  <!-- 2. PENGATURAN -->
+  <section class="screen" id="scrSetup" aria-labelledby="setupTitle">
+    <div class="card">
+      <h2 id="setupTitle">⚙️ Pengaturan Permainan</h2>
+      <div class="form-grid">
+        <div class="field">
+          <label for="selJenjang">Jenjang</label>
+          <select id="selJenjang"></select>
+        </div>
+        <div class="field">
+          <label for="selKelas">Kelas</label>
+          <select id="selKelas"></select>
+        </div>
+        <div class="field">
+          <label for="selMapel">Mata Pelajaran</label>
+          <select id="selMapel"></select>
+        </div>
+        <div class="field">
+          <label for="selMateri">Materi</label>
+          <select id="selMateri"></select>
+          <span class="hint" id="materiHint"></span>
+        </div>
+        <div class="field">
+          <label id="lblJumlah">Jumlah Soal</label>
+          <div class="chips" role="group" aria-labelledby="lblJumlah" id="chipJumlah">
+            <button class="chip" data-v="10">10</button><button class="chip" data-v="15">15</button><button class="chip" data-v="20">20</button>
+          </div>
+        </div>
+        <div class="field">
+          <label id="lblSulit">Tingkat Kesulitan</label>
+          <div class="chips" role="group" aria-labelledby="lblSulit" id="chipSulit">
+            <button class="chip" data-v="1">Mudah</button><button class="chip" data-v="2">Sedang</button><button class="chip" data-v="3">Sulit</button>
+          </div>
+        </div>
+        <div class="field full" id="customBox" hidden>
+          <label for="txtCustom">Tulis atau tempel soal Anda</label>
+          <textarea id="txtCustom" spellcheck="false"></textarea>
+          <span class="hint">Format: pertanyaan, 4 pilihan (A–D), baris <b>Kunci:</b>, dan baris <b>Pembahasan:</b>. Pisahkan setiap soal dengan satu baris kosong. Soal tersimpan otomatis di browser ini.</span>
+          <div><button class="btn secondary" id="btnContoh" type="button">Isi contoh format</button></div>
+        </div>
+      </div>
+      <div class="notice" id="setupInfo"></div>
+      <div class="actions">
+        <button class="btn secondary" id="btnBackHome">← Kembali</button>
+        <button class="btn big" id="btnStart">🚀 Mulai Kuis</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. KUIS -->
+  <section class="screen" id="scrQuiz" aria-label="Soal kuis">
+    <div class="quiz-head">
+      <div class="topic-tag" id="topicTag"></div>
+      <div class="stats">
+        <div class="stat" id="statTime" aria-live="off">⏱️ 30</div>
+        <div class="stat" id="statScore">⭐ Skor 0</div>
+      </div>
+    </div>
+    <div class="progress" aria-hidden="true"><div id="progBar"></div></div>
+    <div class="progress-label"><span id="progText">Soal 1 dari 10</span><span id="progCorrect">Benar 0</span></div>
+    <div class="dots" id="dots" aria-hidden="true" style="margin-bottom:14px"></div>
+    <div class="card">
+      <div class="timer" id="timer" aria-hidden="true"><div id="timerBar"></div></div>
+      <div class="q-num" id="qNum"></div>
+      <p class="q-text" id="qText"></p>
+      <div class="q-img" id="qImg" aria-hidden="true"></div>
+      <div class="opts" id="opts"></div>
+      <div class="feedback" id="feedback" role="status" aria-live="polite"></div>
+      <div class="quiz-foot">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn secondary" id="btnQuit">✖ Keluar</button>
+          <button class="btn secondary" id="btnSpeak" hidden>🔈 Bacakan</button>
+        </div>
+        <span class="kbd-hint">Tombol keyboard: 1–4 / A–D untuk menjawab, Enter untuk lanjut</span>
+        <button class="btn" id="btnNext" hidden>Lanjut →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. HASIL -->
+  <section class="screen" id="scrResult" aria-labelledby="resTitle">
+    <div class="card result">
+      <div class="stars" id="resStars"></div>
+      <h2 id="resTitle">Hasil Akhir</h2>
+      <p id="resMsg"></p>
+      <div class="score-ring" id="ring" style="--p:0"><div><b id="resNilai">0</b><span>Nilai</span></div></div>
+      <div class="summary">
+        <div><b id="resBenar">0</b><small>Benar</small></div>
+        <div><b id="resSalah">0</b><small>Salah</small></div>
+        <div><b id="resHabis">0</b><small>Waktu habis</small></div>
+        <div><b id="resWaktu">0</b><small>Total waktu</small></div>
+      </div>
+      <p class="hint" id="resInfo"></p>
+      <div class="actions">
+        <button class="btn big" id="btnRetry">🔁 Ulangi Permainan</button>
+        <button class="btn secondary" id="btnSettings">⚙️ Ubah Pengaturan</button>
+      </div>
+      <div class="review" id="review"></div>
+    </div>
+  </section>
+
+  <div class="footer">Kuis Seru Belajar · HTML, CSS & JavaScript dalam satu file · dapat dipakai tanpa internet</div>
+</div>
+
+<script>
+"use strict";
+/* =========================================================
+   UTILITAS
+   ========================================================= */
+const $ = s => document.querySelector(s);
+const rnd = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const shuffle = arr => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const gcd = (a, b) => { a = Math.abs(a); b = Math.abs(b); while (b) [a, b] = [b, a % b]; return a || 1; };
+const fmt = n => n.toLocaleString('id-ID').replace('-', '−');
+const P = n => n < 0 ? `(${fmt(n)})` : fmt(n);           // bilangan negatif diberi kurung
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
+
+/* Opsi angka: jawaban benar di indeks 0, pengecoh unik */
+function numOpts(correct, cands, o = {}) {
+  const min = o.min ?? -Infinity, f = o.f || fmt, unit = o.unit || '';
+  const vals = [correct];
+  for (const c of cands) {
+    if (vals.length >= 4) break;
+    if (Number.isInteger(c) && c >= min && !vals.includes(c)) vals.push(c);
+  }
+  let guard = 0;
+  while (vals.length < 4 && guard++ < 500) {
+    const spread = Math.max(3, Math.round(Math.abs(correct) * 0.2));
+    const c = correct + (Math.random() < .5 ? -1 : 1) * rnd(1, spread);
+    if (c >= min && !vals.includes(c)) vals.push(c);
+  }
+  return vals.map(v => f(v) + unit);
+}
+
+/* Pecahan */
+const simp = (n, d) => { const g = gcd(n, d); return [n / g, d / g]; };
+function fracStr([n, d]) {
+  [n, d] = simp(n, d);
+  if (d === 1) return fmt(n);
+  if (n > d) return `${Math.floor(n / d)} ${n % d}/${d}`;
+  return `${n}/${d}`;
+}
+function fracOpts(correct, cands) {
+  const key = p => simp(p[0], p[1]).join('/');
+  const out = [correct], keys = [key(correct)];
+  const add = p => { if (out.length < 4 && p[0] > 0 && p[1] > 0 && !keys.includes(key(p))) { out.push(p); keys.push(key(p)); } };
+  cands.forEach(add);
+  const [cn, cd] = simp(correct[0], correct[1]);
+  let g = 0;
+  while (out.length < 4 && g++ < 200) add([cn + (Math.random() < .5 ? -1 : 1) * rnd(1, 3), cd]);
+  return out.map(fracStr);
+}
+
+/* Format persamaan */
+function term(coef, v, first) {
+  if (coef === 0) return '';
+  const a = Math.abs(coef), sign = coef < 0 ? (first ? '−' : ' − ') : (first ? '' : ' + ');
+  return sign + (a === 1 && v ? '' : fmt(a)) + v;
+}
+const lin = (a, b) => (term(a, 'x', true) + term(b, '', a === 0)) || '0';
+const poly = (a, b, c) => term(a, 'x²', true) + term(b, 'x', false) + term(c, '', false) + ' = 0';
+
+/* =========================================================
+   GENERATOR SOAL OTOMATIS (soal hitungan — tak terbatas, kunci dihitung oleh program)
+   Setiap generator mengembalikan {q, opts:[benar, salah, salah, salah], exp, img?}
+   ========================================================= */
+const BENDA = [['🍎', 'apel'], ['⭐', 'bintang'], ['🐟', 'ikan'], ['🎈', 'balon'], ['🌸', 'bunga'], ['🚗', 'mobil'], ['🐤', 'anak ayam'], ['🍌', 'pisang']];
+
+function genPaudHitung(d) {
+  const [e, nama] = pick(BENDA);
+  if (d === 3) {
+    const a = rnd(1, 5), b = rnd(1, 5), c = a + b;
+    return { q: `Ada ${a} ${nama}, lalu datang ${b} ${nama} lagi. Semuanya jadi berapa ${nama}?`, img: e.repeat(a) + ' ➕ ' + e.repeat(b),
+      opts: numOpts(c, [c + 1, c - 1, a, b], { min: 1 }), exp: `Ayo hitung semuanya: ${a} + ${b} = ${c}. Jadi ada ${c} ${nama}.` };
+  }
+  const n = d === 1 ? rnd(1, 5) : rnd(4, 10);
+  const urut = Array.from({ length: n }, (_, i) => i + 1).join(', ');
+  return { q: `Ada berapa ${nama} pada gambar?`, img: e.repeat(n), opts: numOpts(n, [n + 1, n - 1, n + 2], { min: 1 }),
+    exp: `Ayo hitung satu per satu: ${urut}. Jadi ada ${n} ${nama}.` };
+}
+
+function genSDHitung(d, k) {
+  k = k || 1;
+  const add = (a, b) => ({ q: `${fmt(a)} + ${fmt(b)} = ...`, opts: numOpts(a + b, [a + b + 10, a + b - 10, a + b + 1, Math.abs(a - b)], { min: 0 }), exp: `${fmt(a)} + ${fmt(b)} = ${fmt(a + b)}.` });
+  const sub = (a, b) => ({ q: `${fmt(a)} − ${fmt(b)} = ...`, opts: numOpts(a - b, [a + b, a - b + 10, a - b - 10, a - b + 1], { min: 0 }), exp: `${fmt(a)} − ${fmt(b)} = ${fmt(a - b)}.` });
+  const mul = (a, b) => ({ q: `${fmt(a)} × ${fmt(b)} = ...`, opts: numOpts(a * b, [a + b, a * (b + 1), a * (b - 1), (a + 1) * b], { min: 0 }), exp: `${fmt(a)} × ${fmt(b)} artinya ${fmt(a)} dijumlahkan sebanyak ${fmt(b)} kali, hasilnya ${fmt(a * b)}.` });
+  const div = (q, b) => { const a = q * b; return { q: `${fmt(a)} : ${fmt(b)} = ...`, opts: numOpts(q, [q + 1, q - 1, a - b, q + 10], { min: 1 }), exp: `${fmt(a)} : ${fmt(b)} = ${fmt(q)}, karena ${fmt(q)} × ${fmt(b)} = ${fmt(a)}.` }; };
+  if (k <= 2) {
+    const max = k === 1 ? [10, 20, 50][d - 1] : [20, 50, 100][d - 1];
+    if (Math.random() < .5) { const a = rnd(1, max - 1); return add(a, rnd(1, max - a)); }
+    const a = rnd(2, max); return sub(a, rnd(1, a - 1));
+  }
+  if (k <= 4) {
+    const t = rnd(0, 3);
+    if (d === 1) return t === 0 ? mul(rnd(2, 5), rnd(1, 10)) : t === 1 ? div(rnd(1, 10), rnd(2, 5)) : t === 2 ? add(rnd(10, 99), rnd(10, 99)) : (a => sub(a, rnd(10, a - 1)))(rnd(30, 99));
+    if (d === 2) return t === 0 ? mul(rnd(2, 10), rnd(2, 10)) : t === 1 ? div(rnd(2, 10), rnd(2, 10)) : t === 2 ? add(rnd(100, 999), rnd(100, 999)) : (a => sub(a, rnd(100, a - 1)))(rnd(300, 999));
+    return t === 0 ? mul(rnd(12, 99), rnd(2, 9)) : t === 1 ? div(rnd(11, 99), rnd(2, 9)) : t === 2 ? add(rnd(1000, 9999), rnd(100, 999)) : (a => sub(a, rnd(100, a - 1)))(rnd(1000, 9999));
+  }
+  // kelas 5–6
+  if (d === 1) { const t = rnd(0, 2); return t === 0 ? mul(rnd(11, 30), rnd(3, 9)) : t === 1 ? div(rnd(11, 50), rnd(3, 9)) : add(rnd(1000, 9999), rnd(1000, 9999)); }
+  if (d === 2) {
+    const a = rnd(5, 50), b = rnd(2, 12), c = rnd(2, 12), r = a + b * c;
+    return { q: `${a} + ${b} × ${c} = ...`, opts: numOpts(r, [(a + b) * c, r + 1, r - c], { min: 0 }),
+      exp: `Perkalian dikerjakan lebih dulu: ${b} × ${c} = ${b * c}. Lalu ${a} + ${b * c} = ${r}.` };
+  }
+  const a = rnd(5, 30), b = rnd(5, 30), c = rnd(2, 9), e = rnd(2, 40), r = (a + b) * c - e;
+  return { q: `(${a} + ${b}) × ${c} − ${e} = ...`, opts: numOpts(r, [a + b * c - e, (a + b) * (c - e), r + e + e], {}),
+    exp: `Kerjakan dalam kurung dulu: ${a} + ${b} = ${a + b}. Lalu ${a + b} × ${c} = ${(a + b) * c}. Terakhir ${(a + b) * c} − ${e} = ${r}.` };
+}
+
+function genPecahan(d) {
+  if (d === 1) {
+    const n = rnd(4, 12), a = rnd(1, n - 2), b = rnd(1, n - 1 - a);
+    if (Math.random() < .5) {
+      return { q: `${a}/${n} + ${b}/${n} = ...`, opts: fracOpts([a + b, n], [[a + b, 2 * n], [a + b + 1, n], [Math.abs(a - b) || 1, n]]),
+        exp: `Penyebut sama, jumlahkan pembilangnya: ${a} + ${b} = ${a + b}. Hasil ${a + b}/${n}${gcd(a + b, n) > 1 ? ' = ' + fracStr([a + b, n]) + ' (disederhanakan)' : ''}.` };
+    }
+    const big = rnd(2, n - 1), y = rnd(1, big - 1);
+    return { q: `${big}/${n} − ${y}/${n} = ...`, opts: fracOpts([big - y, n], [[big + y, n], [big - y, 2 * n], [big - y + 1, n]]),
+      exp: `Penyebut sama, kurangkan pembilangnya: ${big} − ${y} = ${big - y}. Hasil ${big - y}/${n}${gcd(big - y, n) > 1 ? ' = ' + fracStr([big - y, n]) + ' (disederhanakan)' : ''}.` };
+  }
+  if (d === 2) {
+    let m = rnd(2, 6), n = rnd(2, 6); while (n === m) n = rnd(2, 6);
+    const a = rnd(1, m - 1), b = rnd(1, n - 1), num = a * n + b * m, den = m * n;
+    return { q: `${a}/${m} + ${b}/${n} = ...`, opts: fracOpts([num, den], [[a + b, m + n], [a + b, m * n], [num + 1, den]]),
+      exp: `Samakan penyebut: ${a}/${m} = ${a * n}/${den} dan ${b}/${n} = ${b * m}/${den}. Jumlahnya ${num}/${den}${fracStr([num, den]) !== num + '/' + den ? ' = ' + fracStr([num, den]) : ''}.` };
+  }
+  let b = rnd(2, 10), a = rnd(1, b - 1); while (gcd(a, b) !== 1) a = rnd(1, b - 1);
+  const N = b * rnd(2, 12), r = N / b * a;
+  return { q: `${a}/${b} dari ${N} adalah ...`, opts: numOpts(r, [N / b, N - r, r + b, N * a], { min: 1 }),
+    exp: `${N} : ${b} = ${N / b}, lalu ${N / b} × ${a} = ${r}.` };
+}
+
+function genBangun(d) {
+  if (d === 1) {
+    const s = rnd(2, 20), luas = Math.random() < .5;
+    return luas
+      ? { q: `Luas persegi dengan panjang sisi ${s} cm adalah ...`, img: '🟦', opts: numOpts(s * s, [4 * s, 2 * s, s * s + s], { min: 1, unit: ' cm²' }), exp: `Luas persegi = sisi × sisi = ${s} × ${s} = ${s * s} cm².` }
+      : { q: `Keliling persegi dengan panjang sisi ${s} cm adalah ...`, img: '🟦', opts: numOpts(4 * s, [s * s, 2 * s, 3 * s], { min: 1, unit: ' cm' }), exp: `Keliling persegi = 4 × sisi = 4 × ${s} = ${4 * s} cm.` };
+  }
+  if (d === 2) {
+    const p = rnd(5, 25), l = rnd(2, p - 1), luas = Math.random() < .5;
+    return luas
+      ? { q: `Sebuah persegi panjang memiliki panjang ${p} cm dan lebar ${l} cm. Luasnya adalah ...`, opts: numOpts(p * l, [2 * (p + l), p + l, p * l + p], { min: 1, unit: ' cm²' }), exp: `Luas = panjang × lebar = ${p} × ${l} = ${p * l} cm².` }
+      : { q: `Sebuah persegi panjang memiliki panjang ${p} cm dan lebar ${l} cm. Kelilingnya adalah ...`, opts: numOpts(2 * (p + l), [p + l, p * l, 2 * p + l], { min: 1, unit: ' cm' }), exp: `Keliling = 2 × (panjang + lebar) = 2 × (${p} + ${l}) = ${2 * (p + l)} cm.` };
+  }
+  if (Math.random() < .5) {
+    const a = 2 * rnd(2, 15), t = rnd(3, 20);
+    return { q: `Sebuah segitiga memiliki alas ${a} cm dan tinggi ${t} cm. Luasnya adalah ...`, img: '🔺', opts: numOpts(a * t / 2, [a * t, a + t, a * t / 2 + t], { min: 1, unit: ' cm²' }), exp: `Luas segitiga = ½ × alas × tinggi = ½ × ${a} × ${t} = ${a * t / 2} cm².` };
+  }
+  const r = 7 * rnd(1, 3), luas = Math.random() < .5, L = 22 * r * r / 7, K = 44 * r / 7;
+  return luas
+    ? { q: `Luas lingkaran dengan jari-jari ${r} cm adalah ... (gunakan π = 22/7)`, img: '⚪', opts: numOpts(L, [K, 22 * r / 7, 22 * 4 * r * r / 7], { min: 1, unit: ' cm²' }), exp: `Luas = π × r × r = 22/7 × ${r} × ${r} = ${L} cm².` }
+    : { q: `Keliling lingkaran dengan jari-jari ${r} cm adalah ... (gunakan π = 22/7)`, img: '⚪', opts: numOpts(K, [L, 22 * r / 7, K + 22], { min: 1, unit: ' cm' }), exp: `Keliling = 2 × π × r = 2 × 22/7 × ${r} = ${K} cm.` };
+}
+
+function genPLSV(d) {
+  const x = rnd(-5, 15);
+  if (d === 1) {
+    let b = rnd(-15, 15); if (b === 0) b = 4;
+    const c = x + b;
+    return { q: `Nilai x yang memenuhi ${lin(1, b)} = ${fmt(c)} adalah ...`, opts: numOpts(x, [c + b, -x, x + 1]),
+      exp: `${lin(1, b)} = ${fmt(c)} → x = ${fmt(c)} ${b > 0 ? '−' : '+'} ${Math.abs(b)} = ${fmt(x)}.` };
+  }
+  if (d === 2) {
+    const a = rnd(2, 9); let b = rnd(-20, 20); if (b === 0) b = 3;
+    const c = a * x + b, alt = (c + b) / a;
+    return { q: `Nilai x yang memenuhi ${lin(a, b)} = ${fmt(c)} adalah ...`, opts: numOpts(x, [alt, c - b, -x, x + 1]),
+      exp: `Pindahkan konstanta: ${a}x = ${fmt(c)} ${b > 0 ? '−' : '+'} ${Math.abs(b)} = ${fmt(c - b)}. Lalu bagi ${a}: x = ${fmt(c - b)} : ${a} = ${fmt(x)}.` };
+  }
+  const a = rnd(3, 9); let c = rnd(2, 8); if (c === a) c = a - 1;
+  let b = rnd(-15, 15); if (b === 0) b = 5;
+  const dd = a * x + b - c * x, alt = (dd - b) / (a + c);
+  return { q: `Nilai x yang memenuhi ${lin(a, b)} = ${lin(c, dd)} adalah ...`, opts: numOpts(x, [alt, -x, x + 2, x - 2]),
+    exp: `Kumpulkan suku x di kiri dan konstanta di kanan: ${a}x − ${c}x = ${fmt(dd)} − ${P(b)} → ${fmt(a - c)}x = ${fmt(dd - b)} → x = ${fmt(x)}.` };
+}
+
+function genBulat(d) {
+  if (d === 1) {
+    if (Math.random() < .5) {
+      const t0 = rnd(-10, 5), up = rnd(3, 15), t1 = t0 + up;
+      return { q: `Suhu mula-mula ${fmt(t0)}°C, kemudian naik ${up}°C. Suhu sekarang adalah ...`, img: '🌡️', opts: numOpts(t1, [t0 - up, -t1, t1 + 1], { unit: '°C' }), exp: `${fmt(t0)} + ${up} = ${fmt(t1)}, jadi suhunya ${fmt(t1)}°C.` };
+    }
+    const a = rnd(-20, 20), b = rnd(-20, -1);
+    return { q: `${fmt(a)} + ${P(b)} = ...`, opts: numOpts(a + b, [a - b, -(a + b), a + b + 1]), exp: `Menjumlahkan bilangan negatif sama dengan mengurangkan: ${fmt(a)} + ${P(b)} = ${fmt(a)} − ${Math.abs(b)} = ${fmt(a + b)}.` };
+  }
+  if (d === 2) {
+    if (Math.random() < .5) {
+      const a = rnd(-20, 20), b = rnd(-20, -1);
+      return { q: `${fmt(a)} − ${P(b)} = ...`, opts: numOpts(a - b, [a + b, -(a - b), a - b + 1]), exp: `Mengurangi bilangan negatif sama dengan menambah lawannya: ${fmt(a)} − ${P(b)} = ${fmt(a)} + ${Math.abs(b)} = ${fmt(a - b)}.` };
+    }
+    const a = rnd(-12, -2), b = rnd(-12, 12) || 3;
+    return { q: `${P(a)} × ${P(b)} = ...`, opts: numOpts(a * b, [-(a * b), a + b, a * b + 1]), exp: `Aturan tanda: ${a * b >= 0 ? 'negatif × negatif = positif' : 'negatif × positif = negatif'}. ${P(a)} × ${P(b)} = ${fmt(a * b)}.` };
+  }
+  const p = rnd(-9, 9) || -4, q = rnd(-9, 9) || 3, s = rnd(2, 6) * (Math.random() < .5 ? -1 : 1), r = s * rnd(-8, 8);
+  const res = p * q + r / s;
+  return { q: `${P(p)} × ${P(q)} + ${P(r)} : ${P(s)} = ...`, opts: numOpts(res, [p * q - r / s, -(res), (p * q + r) / s]),
+    exp: `Kali dan bagi dikerjakan dulu: ${P(p)} × ${P(q)} = ${fmt(p * q)} dan ${P(r)} : ${P(s)} = ${fmt(r / s)}. Lalu ${fmt(p * q)} + ${P(r / s)} = ${fmt(res)}.` };
+}
+
+function genKuadrat(d) {
+  let p, q;
+  do { p = rnd(-9, 9); q = rnd(-9, 9); } while (p === 0 || q === 0 || p === q || p === -q);
+  if (d === 1) {
+    const b = -(p + q), c = p * q, eq = poly(1, b, c);
+    if (Math.random() < .5) return { q: `Jumlah akar-akar persamaan ${eq} adalah ...`, opts: numOpts(-b, [b, c, -c]), exp: `Untuk ax² + bx + c = 0, x₁ + x₂ = −b/a = −(${fmt(b)})/1 = ${fmt(-b)}.` };
+    return { q: `Hasil kali akar-akar persamaan ${eq} adalah ...`, opts: numOpts(c, [-c, b, -b]), exp: `Untuk ax² + bx + c = 0, x₁ · x₂ = c/a = ${fmt(c)}/1 = ${fmt(c)}.` };
+  }
+  if (d === 2) {
+    const b = -(p + q), c = p * q, set = (u, v) => { const [s, t] = [u, v].sort((m, n) => m - n); return `x = ${fmt(s)} atau x = ${fmt(t)}`; };
+    return { q: `Akar-akar persamaan ${poly(1, b, c)} adalah ...`, opts: [set(p, q), set(-p, -q), set(p, -q), set(-p, q)],
+      exp: `Faktorkan: (x ${p > 0 ? '−' : '+'} ${Math.abs(p)})(x ${q > 0 ? '−' : '+'} ${Math.abs(q)}) = 0, jadi x = ${fmt(p)} atau x = ${fmt(q)}. Cek: ${fmt(p)} + ${P(q)} = ${fmt(p + q)} dan ${fmt(p)} × ${P(q)} = ${fmt(c)}.` };
+  }
+  const a = rnd(2, 3), b = -a * (p + q), c = a * p * q, s = p + q, k = p * q, r = s * s - 2 * k;
+  return { q: `Jika x₁ dan x₂ akar-akar persamaan ${poly(a, b, c)}, nilai x₁² + x₂² adalah ...`, opts: numOpts(r, [s * s, s * s + 2 * k, s * s - k]),
+    exp: `x₁ + x₂ = −b/a = ${fmt(s)} dan x₁·x₂ = c/a = ${fmt(k)}. Maka x₁² + x₂² = (x₁ + x₂)² − 2x₁x₂ = ${P(s)}² − 2·${P(k)} = ${fmt(r)}.` };
+}
+
+function genBarisan(d) {
+  const a = rnd(-5, 20), b = rnd(2, 9) * (d === 3 && Math.random() < .3 ? -1 : 1);
+  const U = n => a + (n - 1) * b, deret = [1, 2, 3, 4].map(i => fmt(U(i))).join(', ');
+  if (d === 1) {
+    const n = rnd(8, 20);
+    return { q: `Suku ke-${n} dari barisan ${deret}, ... adalah ...`, opts: numOpts(U(n), [a + n * b, n * b, U(n) - b]),
+      exp: `a = ${fmt(a)}, b = ${fmt(b)}. Uₙ = a + (n − 1)b = ${fmt(a)} + ${n - 1} × ${fmt(b)} = ${fmt(U(n))}.` };
+  }
+  if (d === 2) {
+    const n = rnd(5, 15), S = n * (2 * a + (n - 1) * b) / 2;
+    return { q: `Jumlah ${n} suku pertama barisan ${deret}, ... adalah ...`, opts: numOpts(S, [2 * S, U(n), S + U(n + 1)]),
+      exp: `Sₙ = n/2 × (2a + (n − 1)b) = ${n}/2 × (2·${P(a)} + ${n - 1}·${P(b)}) = ${fmt(S)}.` };
+  }
+  const i = rnd(2, 4), j = i + rnd(3, 6), k = j + rnd(3, 10);
+  return { q: `Pada barisan aritmetika diketahui U${i} = ${fmt(U(i))} dan U${j} = ${fmt(U(j))}. Nilai U${k} adalah ...`, opts: numOpts(U(k), [U(k) + b, U(k) - b, a + k * b]),
+    exp: `b = (U${j} − U${i}) : (${j} − ${i}) = ${fmt(U(j) - U(i))} : ${j - i} = ${fmt(b)}. a = U${i} − ${i - 1}b = ${fmt(a)}. U${k} = a + ${k - 1}b = ${fmt(U(k))}.` };
+}
+
+function genGerak(d) {
+  if (d === 1) {
+    const v = rnd(2, 30), t = rnd(2, 20), s = v * t, m = rnd(0, 2);
+    if (m === 0) return { q: `Sebuah mobil bergerak lurus beraturan menempuh jarak ${fmt(s)} m dalam waktu ${t} s. Kecepatannya adalah ...`, img: '🚗', opts: numOpts(v, [v + t, s - t, v * 2], { min: 1, unit: ' m/s' }), exp: `GLB: v = s / t = ${fmt(s)} / ${t} = ${v} m/s.` };
+    if (m === 1) return { q: `Sepeda bergerak lurus beraturan dengan kecepatan ${v} m/s selama ${t} s. Jarak yang ditempuh adalah ...`, img: '🚲', opts: numOpts(s, [v + t, s + v, s - t], { min: 1, unit: ' m' }), exp: `GLB: s = v × t = ${v} × ${t} = ${fmt(s)} m.` };
+    return { q: `Benda bergerak lurus beraturan dengan kecepatan ${v} m/s menempuh jarak ${fmt(s)} m. Waktu yang dibutuhkan adalah ...`, img: '⏱️', opts: numOpts(t, [t + 1, v, t * 2], { min: 1, unit: ' s' }), exp: `GLB: t = s / v = ${fmt(s)} / ${v} = ${t} s.` };
+  }
+  if (d === 2) {
+    if (Math.random() < .35) {
+      const ms = 5 * rnd(1, 8), kmh = ms * 18 / 5;
+      return { q: `Kecepatan ${kmh} km/jam sama dengan ...`, opts: numOpts(ms, [kmh / 2, ms * 2, ms + 5], { min: 1, unit: ' m/s' }), exp: `1 km/jam = 1000 m / 3600 s = 5/18 m/s. Jadi ${kmh} × 5/18 = ${ms} m/s.` };
+    }
+    const v0 = rnd(0, 20), a = rnd(1, 5), t = rnd(2, 10), v = v0 + a * t;
+    return { q: `Sebuah benda bergerak dengan kecepatan awal ${v0} m/s dan percepatan tetap ${a} m/s². Kecepatannya setelah ${t} s adalah ...`, img: '🏎️', opts: numOpts(v, [v0 + a, a * t + t, v0 * t + a], { min: 0, unit: ' m/s' }), exp: `GLBB: v = v₀ + a·t = ${v0} + ${a} × ${t} = ${v} m/s.` };
+  }
+  const a = 2 * rnd(1, 3), t = rnd(2, 10), v0 = rnd(0, 15), s = v0 * t + a * t * t / 2;
+  return { q: `Benda bergerak dengan kecepatan awal ${v0} m/s dan percepatan tetap ${a} m/s². Jarak yang ditempuh selama ${t} s adalah ...`, opts: numOpts(s, [v0 * t + a * t * t, v0 * t, a * t * t / 2 + v0], { min: 0, unit: ' m' }),
+    exp: `GLBB: s = v₀·t + ½·a·t² = ${v0}×${t} + ½×${a}×${t}² = ${v0 * t} + ${a * t * t / 2} = ${s} m.` };
+}
+
+/* Kata baku — pasangan [baku, tidak baku] sesuai KBBI */
+const BAKU_MUDAH = [['telur', 'telor'], ['izin', 'ijin'], ['sistem', 'sistim'], ['kualitas', 'kwalitas'], ['jadwal', 'jadual'], ['teknik', 'tehnik'], ['nasihat', 'nasehat'], ['cabai', 'cabe'], ['atlet', 'atlit'], ['ijazah', 'ijasah'], ['kreatif', 'kreatip'], ['Februari', 'Pebruari']];
+const BAKU_SULIT = [['apotek', 'apotik'], ['praktik', 'praktek'], ['risiko', 'resiko'], ['karier', 'karir'], ['objek', 'obyek'], ['aktivitas', 'aktifitas'], ['analisis', 'analisa'], ['jenazah', 'jenasah'], ['kuitansi', 'kwitansi'], ['lembap', 'lembab'], ['hakikat', 'hakekat'], ['sekadar', 'sekedar'], ['silakan', 'silahkan'], ['napas', 'nafas'], ['ekstrem', 'ekstrim'], ['standar', 'standart'], ['frekuensi', 'frekwensi']];
+function genBaku(d) {
+  const list = d === 1 ? BAKU_MUDAH : d === 2 ? BAKU_SULIT : BAKU_MUDAH.concat(BAKU_SULIT);
+  const four = shuffle(list).slice(0, 4);
+  if (d === 3) {
+    return { q: 'Manakah kata yang TIDAK baku?', opts: [four[0][1], four[1][0], four[2][0], four[3][0]],
+      exp: `“${four[0][1]}” tidak baku; bentuk bakunya “${four[0][0]}”. Kata ${four.slice(1).map(p => '“' + p[0] + '”').join(', ')} sudah baku.` };
+  }
+  return { q: 'Manakah kata yang baku?', opts: [four[0][0], four[1][1], four[2][1], four[3][1]],
+    exp: `“${four[0][0]}” adalah kata baku. Bentuk baku kata lainnya: ${four.slice(1).map(p => p[1] + ' → ' + p[0]).join(', ')}.` };
+}
+
+/* =========================================================
+   BANK SOAL (format: [kesulitan 1-3, pertanyaan, [benar, salah, salah, salah], pembahasan, gambar?])
+   ========================================================= */
+const B_HEWAN = [
+  [1, 'Hewan apa ini?', ['Sapi', 'Kambing', 'Kucing', 'Ayam'], 'Itu sapi. Sapi memberi kita susu.', '🐄'],
+  [1, 'Hewan apa ini?', ['Ayam', 'Bebek', 'Burung', 'Ikan'], 'Itu ayam. Ayam jantan berkokok “kukuruyuk” di pagi hari.', '🐔'],
+  [1, 'Hewan apa ini?', ['Ikan', 'Kura-kura', 'Katak', 'Ular'], 'Itu ikan. Ikan hidup di air.', '🐟'],
+  [1, 'Hewan apa ini?', ['Kucing', 'Anjing', 'Kelinci', 'Tikus'], 'Itu kucing. Kucing bersuara “meong”.', '🐈'],
+  [1, 'Hewan apa ini?', ['Gajah', 'Kuda', 'Jerapah', 'Badak'], 'Itu gajah. Gajah punya belalai yang panjang.', '🐘'],
+  [1, 'Hewan yang memberi kita telur untuk dimakan adalah ...', ['Ayam', 'Kucing', 'Sapi', 'Kambing'], 'Ayam bertelur. Telur ayam bisa kita makan.', '🥚'],
+  [2, 'Hewan apa yang bisa terbang?', ['Burung', 'Kucing', 'Ikan', 'Kambing'], 'Burung punya sayap sehingga bisa terbang.', '🐦'],
+  [2, 'Hewan yang hidup di air adalah ...', ['Ikan', 'Ayam', 'Sapi', 'Kucing'], 'Ikan hidup di air, di sungai, kolam, atau laut.', '🌊'],
+  [2, 'Hewan apa yang bersuara “mbeek”?', ['Kambing', 'Sapi', 'Ayam', 'Kucing'], 'Kambing bersuara “mbeek”.', '🔊'],
+  [2, 'Hewan apa yang bersuara “guk guk”?', ['Anjing', 'Kucing', 'Bebek', 'Kambing'], 'Anjing menggonggong “guk guk”.', '🔊'],
+  [2, 'Kelinci suka makan ...', ['Wortel', 'Ikan', 'Daging', 'Tulang'], 'Kelinci suka makan sayuran, misalnya wortel.', '🐇'],
+  [3, 'Hewan yang lehernya paling panjang adalah ...', ['Jerapah', 'Gajah', 'Kuda', 'Sapi'], 'Jerapah punya leher sangat panjang untuk makan daun di pohon tinggi.', '🦒'],
+  [3, 'Kupu-kupu berasal dari ...', ['Ulat', 'Cacing', 'Semut', 'Kecoak'], 'Ulat menjadi kepompong, lalu keluar menjadi kupu-kupu.', '🦋'],
+  [3, 'Hewan yang berjalan lambat sambil membawa cangkang di punggungnya adalah ...', ['Siput', 'Kelinci', 'Kuda', 'Kucing'], 'Siput berjalan pelan dan membawa cangkangnya.', '🐌'],
+  [3, 'Kaki ayam ada berapa?', ['2', '4', '6', '8'], 'Ayam punya 2 kaki.', '🐔'],
+  [3, 'Hewan yang berkaki empat adalah ...', ['Kucing', 'Ayam', 'Burung', 'Bebek'], 'Kucing berkaki empat. Ayam, burung, dan bebek berkaki dua.', '🐾']
+];
+const B_WARNA = [
+  [1, 'Apel ini berwarna ...', ['Merah', 'Biru', 'Hijau', 'Ungu'], 'Apel pada gambar berwarna merah.', '🍎'],
+  [1, 'Pisang yang matang berwarna ...', ['Kuning', 'Merah', 'Biru', 'Hitam'], 'Pisang matang berwarna kuning.', '🍌'],
+  [1, 'Daun berwarna ...', ['Hijau', 'Merah', 'Ungu', 'Putih'], 'Daun berwarna hijau.', '🍃'],
+  [1, 'Warna susu adalah ...', ['Putih', 'Hitam', 'Merah', 'Hijau'], 'Susu berwarna putih.', '🥛'],
+  [1, 'Bentuk apa ini?', ['Segitiga', 'Lingkaran', 'Persegi', 'Bintang'], 'Itu segitiga. Segitiga punya 3 sisi.', '🔺'],
+  [1, 'Bentuk apa ini?', ['Lingkaran', 'Segitiga', 'Persegi', 'Bintang'], 'Itu lingkaran. Bentuknya bulat.', '⚪'],
+  [1, 'Bentuk apa ini?', ['Bintang', 'Lingkaran', 'Segitiga', 'Persegi'], 'Itu bintang.', '⭐'],
+  [2, 'Bentuk apa ini?', ['Persegi', 'Segitiga', 'Lingkaran', 'Bintang'], 'Itu persegi. Persegi punya 4 sisi yang sama panjang.', '🟦'],
+  [2, 'Segitiga punya berapa sisi?', ['3', '4', '5', '2'], 'Segitiga punya 3 sisi.', '🔺'],
+  [2, 'Benda yang bentuknya bulat seperti lingkaran adalah ...', ['Roda', 'Buku', 'Pintu', 'Penggaris'], 'Roda berbentuk bulat seperti lingkaran.', '🛞'],
+  [2, 'Warna langit pada siang hari yang cerah adalah ...', ['Biru', 'Hitam', 'Cokelat', 'Merah muda'], 'Langit siang yang cerah berwarna biru.', '☀️'],
+  [3, 'Warna merah dicampur kuning menjadi ...', ['Jingga (oranye)', 'Hijau', 'Ungu', 'Biru'], 'Merah + kuning = jingga (oranye).', '🔴➕🟡'],
+  [3, 'Warna biru dicampur kuning menjadi ...', ['Hijau', 'Jingga', 'Ungu', 'Merah'], 'Biru + kuning = hijau.', '🔵➕🟡'],
+  [3, 'Warna merah dicampur biru menjadi ...', ['Ungu', 'Hijau', 'Jingga', 'Kuning'], 'Merah + biru = ungu.', '🔴➕🔵'],
+  [3, 'Persegi punya berapa sudut?', ['4', '3', '5', '6'], 'Persegi punya 4 sudut.', '🟦'],
+  [3, 'Lanjutkan polanya: merah, biru, merah, biru, ...', ['Merah', 'Biru', 'Hijau', 'Kuning'], 'Polanya berulang merah–biru, jadi berikutnya merah.', '🟥🟦🟥🟦❓']
+];
+const B_TUMBUHAN = [
+  [1, 'Bagian tumbuhan yang menyerap air dan mineral dari tanah adalah ...', ['Akar', 'Daun', 'Bunga', 'Buah'], 'Akar menyerap air dan mineral dari tanah serta menopang tumbuhan agar berdiri kokoh.', '🌱'],
+  [1, 'Fotosintesis pada tumbuhan terutama terjadi di ...', ['Daun', 'Akar', 'Batang', 'Biji'], 'Daun mengandung banyak klorofil sehingga menjadi tempat utama fotosintesis.', '🍃'],
+  [1, 'Zat hijau daun disebut ...', ['Klorofil', 'Stomata', 'Xilem', 'Floem'], 'Klorofil (zat hijau daun) menangkap cahaya matahari untuk fotosintesis.'],
+  [1, 'Bagian tumbuhan yang berfungsi sebagai alat perkembangbiakan generatif adalah ...', ['Bunga', 'Akar', 'Batang', 'Daun'], 'Bunga memiliki benang sari dan putik yang berperan dalam perkembangbiakan generatif.', '🌺'],
+  [1, 'Fungsi batang tumbuhan adalah ...', ['Menopang tumbuhan dan jalur pengangkutan air serta makanan', 'Menyerap air dari tanah', 'Tempat terjadinya penyerbukan', 'Menghasilkan biji'], 'Batang menopang tubuh tumbuhan dan menjadi jalur pengangkutan air, mineral, dan hasil fotosintesis.'],
+  [1, 'Agar dapat berfotosintesis, tumbuhan membutuhkan ...', ['Cahaya matahari', 'Cahaya bulan', 'Suara', 'Angin kencang'], 'Fotosintesis membutuhkan energi cahaya matahari.', '☀️'],
+  [2, 'Bahan yang digunakan tumbuhan dalam fotosintesis adalah ...', ['Air dan karbon dioksida', 'Oksigen dan gula', 'Tanah dan pupuk', 'Garam dan oksigen'], 'Fotosintesis memakai air dan karbon dioksida dengan bantuan cahaya matahari dan klorofil.'],
+  [2, 'Hasil fotosintesis adalah ...', ['Glukosa dan oksigen', 'Air dan karbon dioksida', 'Nitrogen dan air', 'Klorofil dan air'], 'Fotosintesis menghasilkan glukosa (makanan) dan oksigen.'],
+  [2, 'Pembuluh yang mengangkut air dari akar ke daun adalah ...', ['Xilem', 'Floem', 'Stomata', 'Kambium'], 'Xilem (pembuluh kayu) mengangkut air dan mineral dari akar ke daun.'],
+  [2, 'Pembuluh yang mengangkut hasil fotosintesis ke seluruh tubuh tumbuhan adalah ...', ['Floem', 'Xilem', 'Stomata', 'Kutikula'], 'Floem (pembuluh tapis) mengedarkan hasil fotosintesis.'],
+  [2, 'Tumbuhan yang memiliki akar tunggang adalah ...', ['Mangga', 'Padi', 'Jagung', 'Kelapa'], 'Mangga termasuk tumbuhan dikotil yang berakar tunggang. Padi, jagung, dan kelapa berakar serabut.', '🥭'],
+  [2, 'Tumbuhan yang memiliki akar serabut adalah ...', ['Padi', 'Mangga', 'Jambu', 'Rambutan'], 'Padi termasuk tumbuhan monokotil yang berakar serabut.', '🌾'],
+  [2, 'Lubang kecil pada daun tempat keluar-masuknya udara disebut ...', ['Stomata', 'Klorofil', 'Xilem', 'Kambium'], 'Stomata (mulut daun) adalah tempat pertukaran gas.'],
+  [2, 'Daun kaktus berubah menjadi duri untuk ...', ['Mengurangi penguapan air', 'Menarik serangga', 'Mempercepat fotosintesis', 'Menyerap air hujan'], 'Duri mengurangi penguapan sehingga kaktus dapat hidup di tempat kering.', '🌵'],
+  [3, 'Alat kelamin jantan pada bunga adalah ...', ['Benang sari', 'Putik', 'Kelopak', 'Mahkota'], 'Benang sari menghasilkan serbuk sari (alat kelamin jantan).'],
+  [3, 'Alat kelamin betina pada bunga adalah ...', ['Putik', 'Benang sari', 'Kelopak', 'Tangkai bunga'], 'Putik adalah alat kelamin betina pada bunga.'],
+  [3, 'Penyerbukan adalah peristiwa ...', ['Menempelnya serbuk sari di kepala putik', 'Tumbuhnya biji menjadi tanaman baru', 'Gugurnya daun pada musim kemarau', 'Penyerapan air oleh akar'], 'Penyerbukan adalah menempelnya serbuk sari pada kepala putik.'],
+  [3, 'Wortel menyimpan cadangan makanan di bagian ...', ['Akar', 'Batang', 'Daun', 'Bunga'], 'Bagian wortel yang kita makan adalah akar yang menyimpan cadangan makanan.', '🥕'],
+  [3, 'Kentang menyimpan cadangan makanan di bagian ...', ['Batang', 'Akar', 'Daun', 'Buah'], 'Kentang adalah umbi batang, yaitu batang di dalam tanah yang menyimpan cadangan makanan.', '🥔'],
+  [3, 'Mahkota bunga yang berwarna cerah berfungsi untuk ...', ['Menarik serangga agar membantu penyerbukan', 'Menyerap air', 'Tempat utama fotosintesis', 'Menyimpan cadangan makanan'], 'Warna cerah mahkota menarik serangga yang membantu penyerbukan.', '🐝']
+];
+const B_TATASURYA = [
+  [1, 'Pusat tata surya kita adalah ...', ['Matahari', 'Bumi', 'Bulan', 'Jupiter'], 'Semua planet beredar mengelilingi Matahari.', '☀️'],
+  [1, 'Matahari termasuk ...', ['Bintang', 'Planet', 'Satelit', 'Komet'], 'Matahari adalah bintang karena memancarkan cahaya dan panas sendiri.'],
+  [1, 'Planet yang paling dekat dengan Matahari adalah ...', ['Merkurius', 'Venus', 'Bumi', 'Mars'], 'Urutan dari Matahari: Merkurius, Venus, Bumi, Mars, Jupiter, Saturnus, Uranus, Neptunus.'],
+  [1, 'Planet terbesar di tata surya adalah ...', ['Jupiter', 'Saturnus', 'Bumi', 'Neptunus'], 'Jupiter adalah planet terbesar di tata surya.', '🪐'],
+  [1, 'Satelit alami Bumi adalah ...', ['Bulan', 'Matahari', 'Mars', 'Venus'], 'Bulan adalah satu-satunya satelit alami Bumi.', '🌙'],
+  [1, 'Bumi berada pada urutan ke-... dari Matahari.', ['3', '2', '4', '5'], 'Merkurius (1), Venus (2), Bumi (3).', '🌍'],
+  [2, 'Planet yang dijuluki “planet merah” adalah ...', ['Mars', 'Venus', 'Jupiter', 'Merkurius'], 'Mars tampak kemerahan karena permukaannya banyak mengandung besi oksida.'],
+  [2, 'Planet yang terkenal dengan cincinnya yang besar dan indah adalah ...', ['Saturnus', 'Mars', 'Merkurius', 'Venus'], 'Saturnus memiliki sistem cincin yang paling besar dan mudah terlihat.', '🪐'],
+  [2, 'Jumlah planet dalam tata surya saat ini adalah ...', ['8', '9', '7', '10'], 'Sejak 2006, Persatuan Astronomi Internasional (IAU) menggolongkan Pluto sebagai planet kerdil, sehingga ada 8 planet.'],
+  [2, 'Planet yang paling jauh dari Matahari adalah ...', ['Neptunus', 'Uranus', 'Saturnus', 'Jupiter'], 'Neptunus adalah planet ke-8 dan terjauh dari Matahari.'],
+  [2, 'Rotasi Bumi menyebabkan terjadinya ...', ['Siang dan malam', 'Pergantian musim', 'Pergantian tahun', 'Gerhana bulan'], 'Rotasi adalah perputaran Bumi pada porosnya; bagian yang menghadap Matahari mengalami siang.'],
+  [2, 'Waktu yang dibutuhkan Bumi untuk satu kali rotasi adalah sekitar ...', ['24 jam', '365 hari', '12 jam', '30 hari'], 'Bumi berotasi satu kali sekitar 24 jam (satu hari).'],
+  [2, 'Waktu yang dibutuhkan Bumi untuk satu kali revolusi adalah sekitar ...', ['365¼ hari', '24 jam', '30 hari', '7 hari'], 'Revolusi Bumi mengelilingi Matahari memakan waktu sekitar 365¼ hari (satu tahun).'],
+  [3, 'Gerhana matahari terjadi ketika ...', ['Bulan berada di antara Matahari dan Bumi', 'Bumi berada di antara Matahari dan Bulan', 'Matahari berada di antara Bumi dan Bulan', 'Bulan berada di belakang Bumi'], 'Bayangan Bulan jatuh ke Bumi sehingga cahaya Matahari tertutup.'],
+  [3, 'Gerhana bulan terjadi ketika ...', ['Bumi berada di antara Matahari dan Bulan', 'Bulan berada di antara Matahari dan Bumi', 'Matahari berada di antara Bumi dan Bulan', 'Bulan berada sejajar di samping Matahari'], 'Bayangan Bumi menutupi Bulan sehingga Bulan tampak gelap atau kemerahan.'],
+  [3, 'Sabuk asteroid terletak di antara orbit planet ...', ['Mars dan Jupiter', 'Bumi dan Mars', 'Jupiter dan Saturnus', 'Venus dan Bumi'], 'Sabuk asteroid utama berada di antara orbit Mars dan Jupiter.'],
+  [3, 'Planet yang suhu permukaannya paling panas adalah ...', ['Venus', 'Merkurius', 'Mars', 'Jupiter'], 'Walau Merkurius lebih dekat ke Matahari, Venus paling panas karena atmosfernya yang tebal (karbon dioksida) memerangkap panas (efek rumah kaca).'],
+  [3, 'Planet berikut yang termasuk planet berbatu (terestrial) adalah ...', ['Mars', 'Jupiter', 'Saturnus', 'Uranus'], 'Planet berbatu: Merkurius, Venus, Bumi, Mars. Jupiter, Saturnus, Uranus, Neptunus adalah planet raksasa gas/es.'],
+  [3, 'Revolusi Bumi bersama kemiringan sumbu Bumi menyebabkan ...', ['Pergantian musim', 'Siang dan malam', 'Perbedaan waktu WIB, WITA, WIT', 'Pasang naik air laut'], 'Saat Bumi mengelilingi Matahari dengan sumbu yang miring, penyinaran Matahari berubah sepanjang tahun sehingga terjadi pergantian musim.'],
+  [3, 'Perbedaan waktu WIB, WITA, dan WIT disebabkan oleh ...', ['Rotasi Bumi', 'Revolusi Bumi', 'Revolusi Bulan', 'Gerhana'], 'Karena Bumi berotasi dari barat ke timur, wilayah timur lebih dulu mengalami pagi.']
+];
+const B_PANCASILA = [
+  [1, 'Pancasila terdiri atas ... sila.', ['5', '4', '6', '3'], 'Pancasila memiliki lima sila.'],
+  [1, 'Lambang sila pertama Pancasila adalah ...', ['Bintang', 'Rantai', 'Pohon beringin', 'Kepala banteng'], 'Sila ke-1 “Ketuhanan Yang Maha Esa” dilambangkan bintang.', '⭐'],
+  [1, 'Lambang sila kedua Pancasila adalah ...', ['Rantai', 'Bintang', 'Padi dan kapas', 'Pohon beringin'], 'Sila ke-2 “Kemanusiaan yang Adil dan Beradab” dilambangkan rantai.', '⛓️'],
+  [1, 'Lambang sila ketiga Pancasila adalah ...', ['Pohon beringin', 'Kepala banteng', 'Rantai', 'Bintang'], 'Sila ke-3 “Persatuan Indonesia” dilambangkan pohon beringin.', '🌳'],
+  [1, 'Lambang sila keempat Pancasila adalah ...', ['Kepala banteng', 'Pohon beringin', 'Padi dan kapas', 'Rantai'], 'Sila ke-4 “Kerakyatan yang Dipimpin oleh Hikmat Kebijaksanaan dalam Permusyawaratan/Perwakilan” dilambangkan kepala banteng.', '🐃'],
+  [1, 'Lambang sila kelima Pancasila adalah ...', ['Padi dan kapas', 'Bintang', 'Kepala banteng', 'Rantai'], 'Sila ke-5 “Keadilan Sosial bagi Seluruh Rakyat Indonesia” dilambangkan padi dan kapas.', '🌾'],
+  [2, 'Bunyi sila ketiga Pancasila adalah ...', ['Persatuan Indonesia', 'Ketuhanan Yang Maha Esa', 'Kemanusiaan yang Adil dan Beradab', 'Keadilan Sosial bagi Seluruh Rakyat Indonesia'], 'Sila ketiga berbunyi “Persatuan Indonesia”.'],
+  [2, 'Hari Lahir Pancasila diperingati setiap tanggal ...', ['1 Juni', '17 Agustus', '1 Oktober', '28 Oktober'], '1 Juni adalah Hari Lahir Pancasila. 1 Oktober adalah Hari Kesaktian Pancasila.'],
+  [2, 'Lambang negara Indonesia adalah ...', ['Garuda Pancasila', 'Bendera Merah Putih', 'Pohon beringin', 'Bintang'], 'Lambang negara Indonesia adalah Garuda Pancasila.', '🦅'],
+  [2, 'Semboyan yang tertulis pada pita yang dicengkeram Garuda Pancasila adalah ...', ['Bhinneka Tunggal Ika', 'Tut Wuri Handayani', 'Merdeka atau Mati', 'Gotong Royong'], 'Semboyan negara adalah Bhinneka Tunggal Ika.'],
+  [2, 'Arti semboyan Bhinneka Tunggal Ika adalah ...', ['Berbeda-beda tetapi tetap satu jua', 'Bersatu kita teguh', 'Gotong royong membangun bangsa', 'Merdeka untuk selamanya'], 'Bhinneka Tunggal Ika berarti “berbeda-beda tetapi tetap satu jua”.'],
+  [2, 'Berdoa sebelum belajar merupakan pengamalan sila ke-...', ['1', '2', '3', '5'], 'Berdoa adalah wujud iman kepada Tuhan, sesuai sila ke-1.'],
+  [2, 'Bermusyawarah untuk memilih ketua kelas merupakan pengamalan sila ke-...', ['4', '1', '3', '5'], 'Musyawarah untuk mufakat sesuai dengan sila ke-4.'],
+  [3, 'Menolong teman yang tertimpa musibah tanpa membeda-bedakan merupakan pengamalan sila ke-...', ['2', '1', '4', '5'], 'Sikap tenggang rasa dan saling menolong sesama manusia sesuai sila ke-2.'],
+  [3, 'Bermain bersama teman dari suku yang berbeda dan bangga memakai produk dalam negeri merupakan pengamalan sila ke-...', ['3', '2', '4', '1'], 'Menjaga persatuan dan cinta tanah air sesuai sila ke-3.'],
+  [3, 'Tidak boros dan menghargai hasil karya orang lain merupakan pengamalan sila ke-...', ['5', '4', '3', '2'], 'Sikap hemat dan menghargai karya orang lain termasuk pengamalan sila ke-5.'],
+  [3, 'Jumlah bulu pada masing-masing sayap Garuda Pancasila adalah ...', ['17', '8', '19', '45'], 'Bulu sayap 17, bulu ekor 8, bulu pangkal ekor 19, bulu leher 45 — melambangkan 17-8-1945.'],
+  [3, 'Jumlah bulu ekor Garuda Pancasila adalah ...', ['8', '17', '19', '45'], 'Bulu ekor berjumlah 8, melambangkan bulan Agustus.'],
+  [3, 'Perisai di dada Garuda Pancasila terbagi menjadi ... ruang.', ['5', '4', '3', '6'], 'Perisai terbagi menjadi 5 ruang yang berisi lambang kelima sila.'],
+  [3, 'Garis hitam tebal di tengah perisai Garuda Pancasila melambangkan ...', ['Garis khatulistiwa', 'Sungai terpanjang', 'Batas wilayah laut', 'Jalan raya nasional'], 'Garis tebal itu melambangkan garis khatulistiwa yang melintasi Indonesia.']
+];
+const B_PENCERNAAN = [
+  [1, 'Pencernaan secara mekanik pertama kali terjadi di ...', ['Mulut', 'Lambung', 'Usus halus', 'Kerongkongan'], 'Di mulut, gigi mengunyah makanan menjadi bagian kecil (pencernaan mekanik).'],
+  [1, 'Enzim yang terdapat dalam air liur adalah ...', ['Ptialin (amilase)', 'Pepsin', 'Lipase', 'Tripsin'], 'Ptialin/amilase ludah mengubah amilum (zat tepung) menjadi maltosa.'],
+  [1, 'Organ tempat penyerapan sari makanan terbanyak adalah ...', ['Usus halus', 'Lambung', 'Usus besar', 'Kerongkongan'], 'Sari makanan terutama diserap di usus halus melalui vili (jonjot usus).'],
+  [1, 'Penyerapan air terutama terjadi di ...', ['Usus besar', 'Mulut', 'Lambung', 'Kerongkongan'], 'Usus besar menyerap air dari sisa makanan.'],
+  [1, 'Saluran yang menghubungkan mulut dengan lambung adalah ...', ['Kerongkongan (esofagus)', 'Tenggorokan (trakea)', 'Usus halus', 'Pankreas'], 'Kerongkongan menyalurkan makanan dari mulut ke lambung. Trakea adalah saluran pernapasan.'],
+  [1, 'Gigi yang berfungsi untuk memotong makanan adalah ...', ['Gigi seri', 'Gigi taring', 'Gigi geraham', 'Gigi susu'], 'Gigi seri berbentuk pipih dan tajam untuk memotong.', '🦷'],
+  [1, 'Gigi yang berfungsi untuk merobek makanan adalah ...', ['Gigi taring', 'Gigi seri', 'Gigi geraham', 'Gigi bungsu'], 'Gigi taring runcing untuk merobek makanan.', '🦷'],
+  [2, 'Gerak peristaltik adalah ...', ['Gerakan meremas dan mendorong makanan di saluran pencernaan', 'Gerakan mengunyah makanan oleh gigi', 'Gerakan lidah saat mengecap rasa', 'Gerakan menyerap sari makanan oleh vili'], 'Otot kerongkongan dan usus berkontraksi bergelombang untuk mendorong makanan.'],
+  [2, 'Asam klorida (HCl) di lambung berfungsi untuk ...', ['Membunuh kuman dan mengaktifkan pepsinogen menjadi pepsin', 'Mencerna lemak menjadi asam lemak', 'Menyerap air dari makanan', 'Menetralkan asam lambung'], 'HCl membunuh kuman yang masuk bersama makanan dan mengubah pepsinogen menjadi pepsin.'],
+  [2, 'Enzim pepsin mengubah ...', ['Protein menjadi pepton', 'Amilum menjadi maltosa', 'Lemak menjadi asam lemak dan gliserol', 'Maltosa menjadi glukosa'], 'Pepsin di lambung memecah protein menjadi pepton.'],
+  [2, 'Cairan empedu dihasilkan oleh ...', ['Hati', 'Pankreas', 'Lambung', 'Usus besar'], 'Empedu dihasilkan hati dan disimpan di kantong empedu.'],
+  [2, 'Fungsi cairan empedu adalah ...', ['Mengemulsikan lemak', 'Mencerna protein', 'Mengubah amilum menjadi gula', 'Membunuh kuman'], 'Empedu memecah lemak menjadi butiran kecil (emulsi) agar mudah dicerna lipase.'],
+  [2, 'Urutan saluran pencernaan manusia yang benar adalah ...', ['Mulut – kerongkongan – lambung – usus halus – usus besar – anus', 'Mulut – lambung – kerongkongan – usus halus – usus besar – anus', 'Mulut – kerongkongan – usus halus – lambung – usus besar – anus', 'Mulut – kerongkongan – lambung – usus besar – usus halus – anus'], 'Makanan melewati mulut, kerongkongan, lambung, usus halus, usus besar, lalu sisa dikeluarkan melalui anus.'],
+  [2, 'Penyakit maag (gastritis) adalah gangguan pada ...', ['Lambung', 'Usus besar', 'Hati', 'Kerongkongan'], 'Maag adalah peradangan pada dinding lambung.'],
+  [2, 'Kurang makan makanan berserat dapat menyebabkan ...', ['Sembelit (konstipasi)', 'Diare', 'Maag', 'Sariawan'], 'Serat membantu melancarkan buang air besar; kekurangan serat memicu sembelit.', '🥦'],
+  [3, 'Usus halus terdiri atas ...', ['Duodenum, jejunum, dan ileum', 'Kolon, rektum, dan anus', 'Duodenum, kolon, dan rektum', 'Esofagus, duodenum, dan ileum'], 'Usus halus: usus dua belas jari (duodenum), usus kosong (jejunum), dan usus penyerapan (ileum).'],
+  [3, 'Sari makanan diserap melalui ... pada dinding usus halus.', ['Vili (jonjot usus)', 'Alveolus', 'Nefron', 'Stomata'], 'Vili memperluas permukaan penyerapan usus halus.'],
+  [3, 'Enzim lipase berfungsi mengubah ...', ['Lemak menjadi asam lemak dan gliserol', 'Protein menjadi asam amino', 'Amilum menjadi maltosa', 'Pepton menjadi protein'], 'Lipase memecah lemak menjadi asam lemak dan gliserol.'],
+  [3, 'Pankreas mengalirkan enzim pencernaan ke ...', ['Usus dua belas jari (duodenum)', 'Lambung', 'Usus besar', 'Kerongkongan'], 'Getah pankreas (amilase, tripsin, lipase) dialirkan ke duodenum.'],
+  [3, 'Bakteri Escherichia coli di usus besar membantu ...', ['Membusukkan sisa makanan dan membentuk vitamin K', 'Mencerna protein di lambung', 'Menghasilkan cairan empedu', 'Menyerap glukosa ke darah'], 'E. coli di usus besar membantu pembusukan sisa makanan dan pembentukan vitamin K.']
+];
+const B_INFO_SMP = [
+  [1, 'Perangkat berikut yang termasuk perangkat masukan (input) adalah ...', ['Keyboard', 'Monitor', 'Printer', 'Speaker'], 'Keyboard memasukkan data ke komputer. Monitor, printer, dan speaker adalah perangkat keluaran.', '⌨️'],
+  [1, 'Perangkat berikut yang termasuk perangkat keluaran (output) adalah ...', ['Monitor', 'Mouse', 'Scanner', 'Mikrofon'], 'Monitor menampilkan hasil olahan komputer.', '🖥️'],
+  [1, 'Komponen yang memproses data dan instruksi (otak komputer) adalah ...', ['CPU (prosesor)', 'RAM', 'Monitor', 'Power supply'], 'CPU menjalankan instruksi dan mengolah data.'],
+  [1, 'Memori yang datanya hilang ketika komputer dimatikan adalah ...', ['RAM', 'ROM', 'Hard disk', 'SSD'], 'RAM bersifat volatile: isinya hilang saat listrik padam.'],
+  [1, 'Contoh sistem operasi adalah ...', ['Windows', 'Microsoft Word', 'Google Chrome', 'WhatsApp'], 'Windows (juga Linux, Android, macOS) adalah sistem operasi. Lainnya adalah aplikasi.'],
+  [1, 'Memecah masalah besar menjadi bagian-bagian kecil yang lebih mudah diselesaikan disebut ...', ['Dekomposisi', 'Abstraksi', 'Algoritma', 'Pengenalan pola'], 'Dekomposisi adalah salah satu fondasi berpikir komputasional.'],
+  [2, 'Media penyimpanan berikut yang datanya tetap tersimpan saat komputer dimatikan adalah ...', ['SSD', 'RAM', 'Register', 'Cache'], 'SSD menyimpan data secara permanen (non-volatile).', '💾'],
+  [2, '1 byte sama dengan ... bit.', ['8', '4', '16', '1024'], '1 byte = 8 bit.'],
+  [2, 'Dalam pelajaran informatika di sekolah, 1 KB (kilobyte) umumnya dihitung sama dengan ... byte.', ['1024', '1000', '8', '100'], 'Dalam satuan biner 1 KB = 2¹⁰ = 1024 byte. (Standar SI menyebut 1 kB = 1000 byte; 1024 byte disebut juga 1 KiB.)'],
+  [2, 'Bilangan biner 101 sama dengan bilangan desimal ...', ['5', '3', '6', '101'], '101₂ = 1×4 + 0×2 + 1×1 = 5.'],
+  [2, 'Mengabaikan detail yang tidak penting dan berfokus pada informasi penting disebut ...', ['Abstraksi', 'Dekomposisi', 'Debugging', 'Enkripsi'], 'Abstraksi menyaring informasi agar fokus pada hal yang penting.'],
+  [2, 'Algoritma adalah ...', ['Langkah-langkah logis dan berurutan untuk menyelesaikan masalah', 'Bahasa pemrograman tertentu', 'Perangkat keras komputer', 'Kumpulan data acak'], 'Algoritma adalah urutan langkah logis untuk menyelesaikan suatu masalah.'],
+  [2, 'Menemukan kesamaan atau keteraturan dari beberapa masalah disebut ...', ['Pengenalan pola', 'Dekomposisi', 'Abstraksi', 'Kompilasi'], 'Pengenalan pola membantu menggunakan solusi yang sama untuk masalah serupa.'],
+  [2, 'Aplikasi pengolah angka (spreadsheet) contohnya adalah ...', ['Microsoft Excel', 'Microsoft Word', 'Paint', 'Windows Explorer'], 'Excel dan Google Sheets adalah aplikasi pengolah angka.', '📊'],
+  [3, 'Bilangan biner 1101 sama dengan bilangan desimal ...', ['13', '11', '15', '9'], '1101₂ = 8 + 4 + 0 + 1 = 13.'],
+  [3, 'Bilangan desimal 10 jika diubah ke biner menjadi ...', ['1010', '1001', '1100', '0110'], '10 = 8 + 2 = 1×8 + 0×4 + 1×2 + 0×1 → 1010₂.'],
+  [3, 'Pola bilangan 2, 4, 8, 16, ... bilangan berikutnya adalah ...', ['32', '24', '18', '20'], 'Setiap bilangan dikali 2: 16 × 2 = 32.'],
+  [3, 'Perhatikan algoritma: x = 3; x = x + 2; x = x × 2; tampilkan x. Hasil yang ditampilkan adalah ...', ['10', '8', '7', '12'], 'x = 3 → x = 3 + 2 = 5 → x = 5 × 2 = 10.'],
+  [3, 'Pernyataan “JIKA nilai ≥ 75 MAKA tampilkan ‘Tuntas’” merupakan struktur ...', ['Percabangan', 'Perulangan', 'Runtunan', 'Abstraksi'], 'Struktur JIKA–MAKA memilih tindakan berdasarkan kondisi (percabangan).'],
+  [3, 'Instruksi “Ulangi langkah melompat sebanyak 10 kali” merupakan struktur ...', ['Perulangan', 'Percabangan', 'Runtunan', 'Dekomposisi'], 'Mengulang instruksi beberapa kali disebut perulangan (looping).']
+];
+const B_JARINGAN = [
+  [1, 'Kepanjangan LAN adalah ...', ['Local Area Network', 'Large Area Network', 'Line Access Network', 'Local Access Node'], 'LAN adalah jaringan dalam area terbatas seperti satu gedung atau sekolah.'],
+  [1, 'Perangkat yang menghubungkan jaringan yang berbeda dan menentukan jalur pengiriman data adalah ...', ['Router', 'Hub', 'Repeater', 'Kabel UTP'], 'Router meneruskan paket antarjaringan berdasarkan alamat IP.'],
+  [1, 'Kabel yang umum digunakan pada LAN dengan konektor RJ-45 adalah ...', ['UTP', 'Koaksial', 'Serat optik', 'HDMI'], 'Kabel UTP (Unshielded Twisted Pair) memakai konektor RJ-45.'],
+  [1, 'Topologi jaringan yang semua komputernya terhubung ke satu perangkat pusat (switch/hub) adalah ...', ['Star', 'Bus', 'Ring', 'Mesh'], 'Pada topologi star, setiap node terhubung ke perangkat pusat.'],
+  [1, 'Teknologi jaringan nirkabel yang umum dipakai di rumah dan sekolah adalah ...', ['Wi-Fi', 'Kabel UTP', 'Kabel koaksial', 'Serat optik'], 'Wi-Fi menggunakan gelombang radio sehingga tanpa kabel.', '📶'],
+  [2, 'Topologi bus memiliki ciri ...', ['Semua komputer terhubung pada satu kabel utama (backbone)', 'Semua komputer terhubung ke switch', 'Setiap komputer terhubung ke semua komputer lain', 'Komputer terhubung membentuk lingkaran'], 'Topologi bus menggunakan satu kabel utama yang dipakai bersama.'],
+  [2, 'Panjang alamat IPv4 adalah ... bit.', ['32', '64', '128', '16'], 'IPv4 terdiri atas 32 bit (4 oktet × 8 bit).'],
+  [2, 'Panjang alamat IPv6 adalah ... bit.', ['128', '32', '64', '256'], 'IPv6 menggunakan 128 bit.'],
+  [2, 'Fungsi DNS adalah ...', ['Menerjemahkan nama domain menjadi alamat IP', 'Memberikan alamat IP secara otomatis', 'Mengamankan jaringan dari virus', 'Mempercepat koneksi Wi-Fi'], 'DNS (Domain Name System) mengubah nama seperti contoh.com menjadi alamat IP.'],
+  [2, 'Layanan yang memberikan alamat IP secara otomatis kepada perangkat adalah ...', ['DHCP', 'DNS', 'FTP', 'SMTP'], 'DHCP (Dynamic Host Configuration Protocol) membagikan alamat IP otomatis.'],
+  [2, 'Port bawaan (default) protokol HTTP adalah ...', ['80', '443', '21', '25'], 'HTTP memakai port 80, HTTPS port 443, FTP port 21, SMTP port 25.'],
+  [2, 'Alamat IP 127.0.0.1 disebut ...', ['Loopback (localhost)', 'Gateway', 'Broadcast', 'Alamat publik'], '127.0.0.1 merujuk ke komputer itu sendiri (localhost).'],
+  [2, 'Switch bekerja pada lapisan OSI ke-2, yaitu ...', ['Data link', 'Network', 'Transport', 'Physical'], 'Switch meneruskan frame berdasarkan alamat MAC di lapisan data link.'],
+  [3, 'Port bawaan (default) protokol HTTPS adalah ...', ['443', '80', '8080', '22'], 'HTTPS (HTTP terenkripsi) memakai port 443.'],
+  [3, 'Model referensi OSI terdiri atas ... lapisan.', ['7', '4', '5', '6'], 'OSI: Physical, Data link, Network, Transport, Session, Presentation, Application.'],
+  [3, 'Lapisan OSI yang menangani pengalamatan IP dan routing adalah ...', ['Network (lapisan 3)', 'Transport (lapisan 4)', 'Data link (lapisan 2)', 'Session (lapisan 5)'], 'Pengalamatan logis (IP) dan routing berada di lapisan network.'],
+  [3, 'Prefix /24 setara dengan subnet mask ...', ['255.255.255.0', '255.255.0.0', '255.255.255.128', '255.0.0.0'], '/24 berarti 24 bit pertama bernilai 1: 255.255.255.0.'],
+  [3, 'Jumlah host yang dapat dipakai pada jaringan /24 adalah ...', ['254', '256', '255', '252'], '2⁸ − 2 = 254 (dikurangi alamat network dan broadcast).'],
+  [3, 'Alamat IP 192.168.1.10 termasuk kelas ...', ['C', 'A', 'B', 'D'], 'Oktet pertama 192–223 termasuk kelas C. 192.168.x.x juga merupakan rentang IP privat.'],
+  [3, 'Protokol yang digunakan untuk mengirim email adalah ...', ['SMTP', 'POP3', 'FTP', 'DHCP'], 'SMTP untuk mengirim email; POP3/IMAP untuk mengambil email.']
+];
+const B_SEL = [
+  [1, 'Unit struktural dan fungsional terkecil penyusun makhluk hidup adalah ...', ['Sel', 'Jaringan', 'Organ', 'Atom'], 'Sel adalah satuan terkecil yang menyusun tubuh makhluk hidup.'],
+  [1, 'Organel yang mengatur seluruh kegiatan sel adalah ...', ['Inti sel (nukleus)', 'Ribosom', 'Vakuola', 'Lisosom'], 'Nukleus berisi materi genetik dan mengendalikan aktivitas sel.'],
+  [1, 'Organel tempat respirasi sel yang menghasilkan energi (ATP) adalah ...', ['Mitokondria', 'Kloroplas', 'Ribosom', 'Badan Golgi'], 'Mitokondria adalah “pembangkit energi” sel.'],
+  [1, 'Organel tempat berlangsungnya fotosintesis adalah ...', ['Kloroplas', 'Mitokondria', 'Lisosom', 'Sentriol'], 'Kloroplas mengandung klorofil untuk fotosintesis.'],
+  [1, 'Vakuola berukuran besar umumnya ditemukan pada sel ...', ['Tumbuhan', 'Hewan', 'Bakteri', 'Darah merah'], 'Sel tumbuhan dewasa memiliki vakuola sentral yang besar.'],
+  [2, 'Organel tempat sintesis protein adalah ...', ['Ribosom', 'Lisosom', 'Vakuola', 'Sentriol'], 'Ribosom merangkai asam amino menjadi protein.'],
+  [2, 'Struktur yang dimiliki sel tumbuhan tetapi tidak dimiliki sel hewan adalah ...', ['Dinding sel', 'Membran sel', 'Ribosom', 'Mitokondria'], 'Dinding sel (selulosa) hanya ada pada sel tumbuhan, bukan sel hewan.'],
+  [2, 'Organel yang umumnya ada pada sel hewan tetapi tidak ada pada sel tumbuhan tingkat tinggi adalah ...', ['Sentriol', 'Mitokondria', 'Ribosom', 'Badan Golgi'], 'Sentriol berperan dalam pembelahan sel hewan; umumnya tidak ada pada tumbuhan tingkat tinggi.'],
+  [2, 'Badan Golgi berfungsi untuk ...', ['Memodifikasi, mengemas, dan mengirim protein', 'Menghasilkan energi', 'Mencerna bahan di dalam sel', 'Menyimpan materi genetik'], 'Badan Golgi mengolah dan mengemas protein serta zat sekresi.'],
+  [2, 'Lisosom berperan dalam ...', ['Pencernaan intrasel', 'Fotosintesis', 'Sintesis protein', 'Pembelahan sel'], 'Lisosom mengandung enzim hidrolitik untuk mencerna bahan di dalam sel.'],
+  [2, 'Retikulum endoplasma kasar disebut “kasar” karena ...', ['Permukaannya ditempeli ribosom', 'Mengandung klorofil', 'Dindingnya terbuat dari selulosa', 'Berisi enzim pencernaan'], 'Ribosom yang menempel membuat permukaannya tampak kasar.'],
+  [2, 'Membran sel tersusun terutama atas ...', ['Lapisan ganda fosfolipid dan protein', 'Selulosa dan pektin', 'Kitin dan protein', 'Karbohidrat saja'], 'Model mosaik fluida: lapisan ganda fosfolipid dengan protein yang tersebar.'],
+  [2, 'Bakteri termasuk organisme ...', ['Prokariotik', 'Eukariotik', 'Multiseluler kompleks', 'Aseluler'], 'Bakteri tidak memiliki membran inti sehingga tergolong prokariotik.', '🦠'],
+  [3, 'Ciri utama sel prokariotik adalah ...', ['Tidak memiliki membran inti', 'Memiliki banyak organel bermembran', 'Selalu berukuran lebih besar dari sel eukariotik', 'Memiliki kloroplas'], 'Materi genetik sel prokariotik tidak dibungkus membran inti.'],
+  [3, 'Pernyataan “omnis cellula e cellula” (setiap sel berasal dari sel sebelumnya) dikemukakan oleh ...', ['Rudolf Virchow', 'Robert Hooke', 'Charles Darwin', 'Gregor Mendel'], 'Rudolf Virchow (1855) mempopulerkan bahwa sel berasal dari sel sebelumnya.'],
+  [3, 'Ilmuwan yang pertama kali mengamati sel pada sayatan gabus dan memperkenalkan istilah “cell” adalah ...', ['Robert Hooke', 'Rudolf Virchow', 'Antonie van Leeuwenhoek', 'Louis Pasteur'], 'Robert Hooke mengamati sel gabus dan menamainya “cell” (1665).'],
+  [3, 'Difusi adalah perpindahan zat ...', ['Dari konsentrasi tinggi ke rendah tanpa energi', 'Dari konsentrasi rendah ke tinggi dengan energi', 'Melalui pembentukan vesikel', 'Hanya untuk molekul air'], 'Difusi termasuk transpor pasif: mengikuti gradien konsentrasi tanpa ATP.'],
+  [3, 'Osmosis adalah perpindahan air melalui membran semipermeabel dari larutan ...', ['Hipotonis ke hipertonis', 'Hipertonis ke hipotonis', 'Isotonis ke isotonis', 'Pekat ke encer'], 'Air bergerak dari larutan encer (hipotonis) ke larutan pekat (hipertonis).'],
+  [3, 'Sel darah merah yang dimasukkan ke larutan hipertonis akan ...', ['Mengerut (krenasi)', 'Pecah (lisis)', 'Tetap normal', 'Membelah diri'], 'Air keluar dari sel ke larutan yang lebih pekat sehingga sel mengerut.'],
+  [3, 'Contoh transpor aktif pada membran sel adalah ...', ['Pompa natrium-kalium', 'Difusi oksigen', 'Osmosis air', 'Difusi terfasilitasi glukosa'], 'Pompa Na⁺–K⁺ memindahkan ion melawan gradien konsentrasi menggunakan ATP.']
+];
+
+/* =========================================================
+   DAFTAR MATERI
+   ========================================================= */
+const TOPICS = [
+  { id: 'paud-hitung', jenjang: ['PAUD'], mapel: 'Matematika Awal', materi: 'Berhitung 1–10', icon: '🔢', gen: genPaudHitung },
+  { id: 'paud-hewan', jenjang: ['PAUD'], mapel: 'Sains Awal', materi: 'Mengenal Hewan', icon: '🐾', bank: B_HEWAN },
+  { id: 'paud-warna', jenjang: ['PAUD'], mapel: 'Seni', materi: 'Warna dan Bentuk', icon: '🎨', bank: B_WARNA },
+  { id: 'sd-hitung', jenjang: ['SD'], mapel: 'Matematika', materi: 'Operasi Hitung Bilangan', kelas: 'menyesuaikan kelas 1–6', icon: '➕', gen: genSDHitung },
+  { id: 'sd-pecahan', jenjang: ['SD'], mapel: 'Matematika', materi: 'Pecahan', kelas: '3–6', icon: '🍕', gen: genPecahan },
+  { id: 'sd-bangun', jenjang: ['SD'], mapel: 'Matematika', materi: 'Keliling dan Luas Bangun Datar', kelas: '3–6', icon: '📐', gen: genBangun },
+  { id: 'sd-tumbuhan', jenjang: ['SD'], mapel: 'IPAS', materi: 'Bagian Tumbuhan dan Fungsinya', kelas: '4', icon: '🌱', bank: B_TUMBUHAN },
+  { id: 'sd-tatasurya', jenjang: ['SD'], mapel: 'IPAS', materi: 'Tata Surya', kelas: '6', icon: '🪐', bank: B_TATASURYA },
+  { id: 'sd-pancasila', jenjang: ['SD'], mapel: 'Pendidikan Pancasila', materi: 'Pancasila dan Lambang Negara', kelas: '1–6', icon: '🦅', bank: B_PANCASILA },
+  { id: 'bind-baku', jenjang: ['SD', 'SMP'], mapel: 'Bahasa Indonesia', materi: 'Kata Baku dan Tidak Baku', kelas: '4–9', icon: '📝', gen: genBaku },
+  { id: 'smp-bulat', jenjang: ['SMP'], mapel: 'Matematika', materi: 'Operasi Bilangan Bulat', kelas: '7', icon: '➖', gen: genBulat },
+  { id: 'smp-plsv', jenjang: ['SMP'], mapel: 'Matematika', materi: 'Persamaan Linear Satu Variabel', kelas: '7', icon: '⚖️', gen: genPLSV },
+  { id: 'smp-cerna', jenjang: ['SMP'], mapel: 'IPA', materi: 'Sistem Pencernaan Manusia', kelas: '8', icon: '🫃', bank: B_PENCERNAAN },
+  { id: 'smp-info', jenjang: ['SMP'], mapel: 'Informatika', materi: 'Perangkat Keras, Bilangan Biner, dan Berpikir Komputasional', kelas: '7', icon: '💻', bank: B_INFO_SMP },
+  { id: 'sma-kuadrat', jenjang: ['SMA', 'SMK'], mapel: 'Matematika', materi: 'Persamaan Kuadrat', kelas: '10', icon: '📈', gen: genKuadrat },
+  { id: 'sma-barisan', jenjang: ['SMA', 'SMK'], mapel: 'Matematika', materi: 'Barisan dan Deret Aritmetika', kelas: '10–11', icon: '🔢', gen: genBarisan },
+  { id: 'sma-gerak', jenjang: ['SMA', 'SMK'], mapel: 'Fisika', materi: 'Gerak Lurus (GLB dan GLBB)', kelas: '10', icon: '🚀', gen: genGerak },
+  { id: 'sma-jaringan', jenjang: ['SMA', 'SMK'], mapel: 'Informatika', materi: 'Jaringan Komputer dan Internet', kelas: '10–11', icon: '🌐', bank: B_JARINGAN },
+  { id: 'sma-sel', jenjang: ['SMA'], mapel: 'Biologi', materi: 'Sel', kelas: '11', icon: '🔬', bank: B_SEL }
+];
+const CUSTOM_MAPEL = '✍️ Soal Buatan Guru';
+const JENJANG = {
+  PAUD: { label: 'PAUD / TK', kelas: ['Kelompok A (4–5 tahun)', 'Kelompok B (5–6 tahun)'], icon: '🧸' },
+  SD: { label: 'SD / MI', kelas: [1, 2, 3, 4, 5, 6].map(k => 'Kelas ' + k), icon: '🎒' },
+  SMP: { label: 'SMP / MTs', kelas: [7, 8, 9].map(k => 'Kelas ' + k), icon: '📘' },
+  SMA: { label: 'SMA / MA', kelas: [10, 11, 12].map(k => 'Kelas ' + k), icon: '🎓' },
+  SMK: { label: 'SMK / MAK', kelas: [10, 11, 12].map(k => 'Kelas ' + k), icon: '🛠️' }
+};
+const CONTOH_CUSTOM = `Ibu kota Provinsi Bengkulu adalah ...
+A. Bengkulu
+B. Padang
+C. Palembang
+D. Jambi
+Kunci: A
+Pembahasan: Ibu kota Provinsi Bengkulu adalah Kota Bengkulu.
+
+Hasil dari 12 × 3 adalah ...
+A. 15
+B. 36
+C. 32
+D. 9
+Kunci: B
+Pembahasan: 12 × 3 = 36.`;
+
+/* Bahasa menyesuaikan jenjang */
+const MSG = {
+  kecil: { ok: ['Hebat! 🎉', 'Pintar sekali! ⭐', 'Betul! 👏', 'Kamu keren! 🌟'], bad: ['Belum tepat, tidak apa-apa! 💪', 'Ups, belum benar. Ayo semangat! 🙂'], late: 'Waktunya habis! ⏰' },
+  besar: { ok: ['Benar! Jawaban tepat.', 'Tepat sekali!', 'Benar, pertahankan!'], bad: ['Kurang tepat.', 'Jawaban belum benar.'], late: 'Waktu habis.' }
+};
+
+/* =========================================================
+   STATE & ELEMEN
+   ========================================================= */
+const S = Object.assign({ jenjang: 'SD', kelasIdx: 3, mapel: 'IPAS', topic: 'sd-tumbuhan', jumlah: 10, sulit: 1 }, store.get('kuis-setting', {}));
+let G = null;            // data permainan berjalan
+let timerId = null;
+let soundOn = store.get('kuis-sound', true);
+
+const el = id => document.getElementById(id);
+function show(id) { document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id)); window.scrollTo(0, 0); }
+
+/* =========================================================
+   PENGATURAN
+   ========================================================= */
+function mapelList(j) { const m = [...new Set(TOPICS.filter(t => t.jenjang.includes(j)).map(t => t.mapel))]; m.push(CUSTOM_MAPEL); return m; }
+function fillSelect(sel, items, val) {
+  sel.innerHTML = '';
+  items.forEach(([v, l]) => { const o = document.createElement('option'); o.value = v; o.textContent = l; sel.appendChild(o); });
+  if (items.some(([v]) => String(v) === String(val))) sel.value = val;
+}
+function renderSetup() {
+  document.documentElement.dataset.jenjang = S.jenjang;
+  fillSelect(el('selJenjang'), Object.entries(JENJANG).map(([k, v]) => [k, v.icon + ' ' + v.label]), S.jenjang);
+  const kls = JENJANG[S.jenjang].kelas;
+  if (S.kelasIdx >= kls.length) S.kelasIdx = 0;
+  fillSelect(el('selKelas'), kls.map((k, i) => [i, k]), S.kelasIdx);
+  const mp = mapelList(S.jenjang);
+  if (!mp.includes(S.mapel)) S.mapel = mp[0];
+  fillSelect(el('selMapel'), mp.map(m => [m, m]), S.mapel);
+  const custom = S.mapel === CUSTOM_MAPEL;
+  if (custom) {
+    fillSelect(el('selMateri'), [['custom', 'Soal yang diketik/ditempel guru']], 'custom');
+    S.topic = 'custom';
+  } else {
+    const tp = TOPICS.filter(t => t.jenjang.includes(S.jenjang) && t.mapel === S.mapel);
+    if (!tp.some(t => t.id === S.topic)) S.topic = tp[0].id;
+    fillSelect(el('selMateri'), tp.map(t => [t.id, t.icon + ' ' + t.materi]), S.topic);
+  }
+  el('selMateri').disabled = custom;
+  el('customBox').hidden = !custom;
+  const t = TOPICS.find(x => x.id === S.topic);
+  el('materiHint').textContent = custom ? '' : t.gen ? `Soal hitungan dibuat otomatis — selalu baru setiap main.${t.kelas ? ' Disarankan kelas ' + t.kelas + '.' : ''}` : `Bank soal: ${t.bank.length} soal.${t.kelas ? ' Disarankan kelas ' + t.kelas + '.' : ''}`;
+  document.querySelectorAll('#chipJumlah .chip').forEach(c => c.setAttribute('aria-pressed', String(+c.dataset.v === S.jumlah)));
+  document.querySelectorAll('#chipSulit .chip').forEach(c => c.setAttribute('aria-pressed', String(+c.dataset.v === S.sulit)));
+  el('chipSulit').closest('.field').style.opacity = custom ? .5 : 1;
+  updateInfo();
+  store.set('kuis-setting', S);
+}
+function timePerQ() { return ({ 1: 30, 2: 45, 3: 60 })[S.sulit] + (S.jenjang === 'PAUD' ? 20 : S.jenjang === 'SD' ? 10 : 0); }
+function updateInfo() {
+  const info = el('setupInfo'); info.classList.remove('error');
+  const lv = ['', 'Mudah', 'Sedang', 'Sulit'][S.sulit];
+  if (S.topic === 'custom') {
+    const r = parseCustom(el('txtCustom').value);
+    if (r.errors.length) { info.classList.add('error'); info.innerHTML = '⚠️ ' + r.errors.slice(0, 4).map(esc).join('<br>⚠️ '); return; }
+    info.textContent = `✅ ${r.items.length} soal terbaca. Permainan memakai ${Math.min(r.items.length, S.jumlah)} soal, ⏱️ ${timePerQ()} detik per soal.`;
+    return;
+  }
+  const t = TOPICS.find(x => x.id === S.topic), n = t.bank ? Math.min(t.bank.length, S.jumlah) : S.jumlah;
+  info.textContent = (n < S.jumlah ? `ℹ️ Materi ini memiliki ${n} soal, jadi permainan memakai ${n} soal. ` : '') + `🎯 ${n} soal · tingkat ${lv} · ⏱️ ${timePerQ()} detik per soal · nilai maksimal 100.`;
+}
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+/* Parser soal buatan guru */
+function parseCustom(text) {
+  const items = [], errors = [];
+  const blocks = text.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+  if (!blocks.length) errors.push('Belum ada soal. Ketik soal atau klik “Isi contoh format”.');
+  blocks.forEach((b, bi) => {
+    const lines = b.split('\n').map(l => l.trim()).filter(Boolean);
+    const q = [], opts = {}; let key = '', exp = '', mode = 'q';
+    for (const l of lines) {
+      let m;
+      if ((m = l.match(/^([A-Da-d])[\.\)]\s*(.+)$/)) && mode !== 'exp') { opts[m[1].toUpperCase()] = m[2]; mode = 'opt'; }
+      else if ((m = l.match(/^kunci\s*(?:jawaban)?\s*[:=]\s*([A-Da-d])\b/i))) { key = m[1].toUpperCase(); mode = 'key'; }
+      else if ((m = l.match(/^pembahasan\s*[:=]\s*(.*)$/i))) { exp = m[1]; mode = 'exp'; }
+      else if (mode === 'q') q.push(l);
+      else if (mode === 'exp') exp += ' ' + l;
+    }
+    const n = bi + 1;
+    if (!q.length) return errors.push(`Soal ${n}: pertanyaan belum ditulis.`);
+    if (['A', 'B', 'C', 'D'].some(k => !opts[k])) return errors.push(`Soal ${n}: pilihan A, B, C, dan D harus lengkap.`);
+    if (!key) return errors.push(`Soal ${n}: baris “Kunci: A/B/C/D” belum ada.`);
+    const order = ['A', 'B', 'C', 'D'];
+    items.push({ q: q.join('\n'), opts: [opts[key], ...order.filter(k => k !== key).map(k => opts[k])], exp: exp || `Jawaban yang benar adalah ${key}. ${opts[key]}.` });
+  });
+  return { items, errors };
+}
+
+/* =========================================================
+   MEMBUAT PAKET SOAL
+   ========================================================= */
+function buildQuestions() {
+  const n = S.jumlah, d = S.sulit, kelasNum = S.jenjang === 'PAUD' ? 0 : parseInt(JENJANG[S.jenjang].kelas[S.kelasIdx].replace(/\D/g, ''), 10);
+  let raw = [];
+  if (S.topic === 'custom') {
+    raw = shuffle(parseCustom(el('txtCustom').value).items).slice(0, n);
+  } else {
+    const t = TOPICS.find(x => x.id === S.topic);
+    if (t.gen) {
+      const seen = new Set(); let guard = 0;
+      while (raw.length < n && guard++ < n * 60) {
+        const item = t.gen(d, kelasNum);
+        const k = item.q + '|' + item.opts[0] + '|' + (item.img || '');
+        if (seen.has(k) || new Set(item.opts).size !== 4) continue;
+        seen.add(k); raw.push(item);
+      }
+    } else {
+      // utamakan tingkat kesulitan yang dipilih, lalu yang terdekat
+      raw = shuffle(t.bank).map(r => ({ r, w: Math.abs(r[0] - d) + Math.random() * .5 }))
+        .sort((a, b) => a.w - b.w).slice(0, n).map(({ r }) => ({ q: r[1], opts: r[2], exp: r[3], img: r[4] }));
+      raw = shuffle(raw);
+    }
+  }
+  return raw.map(it => {
+    const order = shuffle([0, 1, 2, 3]);
+    return { q: it.q, img: it.img || '', exp: it.exp, options: order.map(i => it.opts[i]), answer: order.indexOf(0) };
+  });
+}
+
+/* =========================================================
+   PERMAINAN
+   ========================================================= */
+function startGame() {
+  if (S.topic === 'custom') {
+    const r = parseCustom(el('txtCustom').value);
+    if (r.errors.length || !r.items.length) { updateInfo(); el('setupInfo').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+  }
+  const qs = buildQuestions();
+  if (!qs.length) return;
+  const t = TOPICS.find(x => x.id === S.topic);
+  G = { qs, idx: 0, benar: 0, salah: 0, habis: 0, log: [], start: Date.now(), limit: timePerQ(),
+    kecil: S.jenjang === 'PAUD' || S.jenjang === 'SD',
+    title: (t ? t.icon + ' ' + t.mapel + ' · ' + t.materi : CUSTOM_MAPEL) + ' · ' + JENJANG[S.jenjang].kelas[S.kelasIdx] };
+  el('topicTag').textContent = G.title;
+  el('btnSpeak').hidden = !G.kecil || !('speechSynthesis' in window);
+  el('dots').innerHTML = qs.map(() => '<span class="dot"></span>').join('');
+  show('scrQuiz');
+  renderQ();
+}
+
+function renderQ() {
+  const q = G.qs[G.idx], n = G.qs.length;
+  G.locked = false;
+  el('qNum').textContent = `Soal ${G.idx + 1}`;
+  el('qText').textContent = q.q;
+  el('qImg').textContent = q.img; el('qImg').style.display = q.img ? '' : 'none';
+  el('progText').textContent = `Soal ${G.idx + 1} dari ${n}`;
+  el('progBar').style.width = (G.idx / n * 100) + '%';
+  document.querySelectorAll('#dots .dot').forEach((d, i) => d.classList.toggle('now', i === G.idx));
+  const box = el('opts'); box.innerHTML = '';
+  q.options.forEach((txt, i) => {
+    const b = document.createElement('button');
+    b.className = 'opt'; b.type = 'button';
+    b.innerHTML = `<span class="key">${'ABCD'[i]}</span><span></span>`;
+    b.lastChild.textContent = txt;
+    b.setAttribute('aria-label', `Pilihan ${'ABCD'[i]}: ${txt}`);
+    b.addEventListener('click', () => answer(i));
+    box.appendChild(b);
+  });
+  el('feedback').className = 'feedback'; el('feedback').innerHTML = '';
+  el('btnNext').hidden = true;
+  startTimer();
+  if (S.jenjang === 'PAUD' && el('btnSpeak').hidden === false) speak();
+}
+
+function startTimer() {
+  clearInterval(timerId);
+  G.left = G.limit;
+  const tick = () => {
+    el('statTime').textContent = `⏱️ ${G.left} dtk`;
+    el('timerBar').style.width = (G.left / G.limit * 100) + '%';
+    el('timer').classList.toggle('low', G.left <= 5);
+    el('statTime').style.color = G.left <= 5 ? 'var(--bad)' : '';
+  };
+  tick();
+  timerId = setInterval(() => {
+    G.left--; tick();
+    if (G.left <= 5 && G.left > 0) beep(880, .05);
+    if (G.left <= 0) { clearInterval(timerId); answer(-1); }
+  }, 1000);
+}
+
+function answer(i) {
+  if (!G || G.locked) return;
+  G.locked = true; clearInterval(timerId);
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  const q = G.qs[G.idx], ok = i === q.answer, late = i === -1;
+  if (ok) G.benar++; else if (late) G.habis++; else G.salah++;
+  G.log.push({ q, chosen: i, ok });
+  const btns = el('opts').querySelectorAll('.opt');
+  btns.forEach((b, j) => {
+    b.disabled = true;
+    if (j === q.answer) b.classList.add('correct');
+    else if (j === i) b.classList.add('wrong');
+    else b.classList.add('dim');
+  });
+  const m = G.kecil ? MSG.kecil : MSG.besar;
+  const fb = el('feedback');
+  fb.className = 'feedback show ' + (ok ? 'ok' : 'bad');
+  fb.innerHTML = `<h3></h3><p class="ans"></p><p><b>💡 Pembahasan:</b> <span class="exp"></span></p>`;
+  fb.querySelector('h3').textContent = ok ? '✅ ' + pick(m.ok) : late ? '⏰ ' + m.late : '❌ ' + pick(m.bad);
+  fb.querySelector('.ans').textContent = ok ? `Jawabanmu: ${'ABCD'[i]}. ${q.options[i]}` : `Jawaban yang benar: ${'ABCD'[q.answer]}. ${q.options[q.answer]}`;
+  fb.querySelector('.exp').textContent = q.exp;
+  const dot = document.querySelectorAll('#dots .dot')[G.idx];
+  dot.classList.add(ok ? 'ok' : 'bad');
+  const n = G.qs.length;
+  el('progBar').style.width = ((G.idx + 1) / n * 100) + '%';
+  el('progCorrect').textContent = `Benar ${G.benar}`;
+  el('statScore').textContent = `⭐ Skor ${score()}`;
+  ok ? (beep(660, .08), setTimeout(() => beep(990, .12), 90)) : beep(200, .25);
+  const nb = el('btnNext');
+  nb.textContent = G.idx + 1 < n ? 'Lanjut →' : '🏁 Lihat Hasil';
+  nb.hidden = false; nb.focus({ preventScroll: true });
+  fb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+const score = () => Math.round(G.benar / G.qs.length * 100);
+
+function next() {
+  if (!G || !G.locked) return;
+  G.idx++;
+  if (G.idx >= G.qs.length) return showResult();
+  renderQ();
+}
+
+function showResult() {
+  clearInterval(timerId);
+  const n = G.qs.length, nilai = score(), detik = Math.round((Date.now() - G.start) / 1000);
+  el('resNilai').textContent = nilai;
+  el('ring').style.setProperty('--p', nilai);
+  el('resBenar').textContent = G.benar;
+  el('resSalah').textContent = G.salah;
+  el('resHabis').textContent = G.habis;
+  el('resWaktu').textContent = detik >= 60 ? `${Math.floor(detik / 60)}m ${detik % 60}d` : `${detik}d`;
+  const stars = nilai >= 90 ? 3 : nilai >= 70 ? 2 : nilai >= 40 ? 1 : 0;
+  el('resStars').textContent = '★'.repeat(stars) + '☆'.repeat(3 - stars);
+  el('resStars').style.color = 'var(--warn)';
+  const k = G.kecil;
+  el('resTitle').textContent = nilai >= 90 ? (k ? 'Luar Biasa! 🏆' : 'Luar Biasa!') : nilai >= 75 ? (k ? 'Bagus Sekali! 🎉' : 'Bagus!') : nilai >= 60 ? (k ? 'Cukup Baik! 👍' : 'Cukup Baik') : (k ? 'Ayo Belajar Lagi! 💪' : 'Terus Berlatih');
+  el('resMsg').textContent = `Kamu menjawab benar ${G.benar} dari ${n} soal.`;
+  el('resInfo').textContent = `Nilai = (jawaban benar ÷ jumlah soal) × 100 = (${G.benar} ÷ ${n}) × 100 = ${nilai}. ${G.title}`;
+  const rv = el('review'); rv.innerHTML = '<h3>📋 Pembahasan Semua Soal</h3>';
+  G.log.forEach((L, i) => {
+    const d = document.createElement('details');
+    d.innerHTML = '<summary></summary><p class="u"></p><p class="c"></p><p class="e"></p>';
+    d.querySelector('summary').innerHTML = `<span class="${L.ok ? 'r-ok' : 'r-bad'}">${L.ok ? '✔' : '✘'}</span> `;
+    d.querySelector('summary').append(`Soal ${i + 1}: ${L.q.q}${L.q.img ? ' ' + L.q.img : ''}`);
+    d.querySelector('.u').textContent = 'Jawabanmu: ' + (L.chosen === -1 ? '— (waktu habis)' : 'ABCD'[L.chosen] + '. ' + L.q.options[L.chosen]);
+    d.querySelector('.c').textContent = 'Jawaban benar: ' + 'ABCD'[L.q.answer] + '. ' + L.q.options[L.q.answer];
+    d.querySelector('.e').textContent = '💡 ' + L.q.exp;
+    rv.appendChild(d);
+  });
+  show('scrResult');
+  if (nilai >= 75) confetti();
+  beep(523, .1); setTimeout(() => beep(659, .1), 120); setTimeout(() => beep(784, .18), 240);
+}
+
+/* =========================================================
+   EFEK: suara, konfeti, baca soal
+   ========================================================= */
+let actx = null;
+function beep(f, dur) {
+  if (!soundOn) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.frequency.value = f; o.type = 'sine';
+    g.gain.setValueAtTime(.12, actx.currentTime); g.gain.exponentialRampToValueAtTime(.001, actx.currentTime + dur);
+    o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime + dur);
+  } catch (e) {}
+}
+function confetti() {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const c = document.createElement('div'); c.className = 'confetti';
+  const colors = ['#e8590c', '#2b8a3e', '#2f6fde', '#6741d9', '#f59f00', '#d6336c'];
+  for (let i = 0; i < 80; i++) {
+    const p = document.createElement('i');
+    p.style.left = Math.random() * 100 + 'vw'; p.style.background = pick(colors);
+    p.style.animationDuration = (2 + Math.random() * 2) + 's'; p.style.animationDelay = Math.random() * .6 + 's';
+    c.appendChild(p);
+  }
+  document.body.appendChild(c); setTimeout(() => c.remove(), 5000);
+}
+function speak() {
+  if (!('speechSynthesis' in window) || !G) return;
+  const q = G.qs[G.idx];
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(q.q.replace(/\.\.\./g, 'titik titik') + '. ' + q.options.map((o, i) => 'ABCD'[i] + ', ' + o).join('. '));
+  u.lang = 'id-ID'; u.rate = .9;
+  try { speechSynthesis.speak(u); } catch (e) {}
+}
+
+/* =========================================================
+   EVENT
+   ========================================================= */
+el('btnHomeStart').onclick = () => { renderSetup(); show('scrSetup'); };
+el('btnBackHome').onclick = () => show('scrHome');
+el('selJenjang').onchange = e => { S.jenjang = e.target.value; S.kelasIdx = 0; if (S.jenjang === 'PAUD' && S.jumlah > 10) S.jumlah = 10; renderSetup(); };
+el('selKelas').onchange = e => { S.kelasIdx = +e.target.value; renderSetup(); };
+el('selMapel').onchange = e => { S.mapel = e.target.value; S.topic = ''; renderSetup(); };
+el('selMateri').onchange = e => { S.topic = e.target.value; renderSetup(); };
+el('chipJumlah').onclick = e => { const c = e.target.closest('.chip'); if (c) { S.jumlah = +c.dataset.v; renderSetup(); } };
+el('chipSulit').onclick = e => { const c = e.target.closest('.chip'); if (c) { S.sulit = +c.dataset.v; renderSetup(); } };
+el('txtCustom').value = store.get('kuis-custom', '');
+el('txtCustom').oninput = () => { store.set('kuis-custom', el('txtCustom').value); updateInfo(); };
+el('btnContoh').onclick = () => { el('txtCustom').value = CONTOH_CUSTOM; store.set('kuis-custom', CONTOH_CUSTOM); updateInfo(); };
+el('btnStart').onclick = startGame;
+el('btnNext').onclick = next;
+el('btnSpeak').onclick = speak;
+el('btnQuit').onclick = () => { if (confirm('Keluar dari permainan? Progres soal ini tidak disimpan.')) { clearInterval(timerId); G = null; renderSetup(); show('scrSetup'); } };
+el('btnRetry').onclick = startGame;
+el('btnSettings').onclick = () => { renderSetup(); show('scrSetup'); };
+el('btnSound').onclick = () => { soundOn = !soundOn; store.set('kuis-sound', soundOn); el('btnSound').textContent = soundOn ? '🔊' : '🔇'; };
+el('btnSound').textContent = soundOn ? '🔊' : '🔇';
+el('btnTheme').onclick = () => {
+  const r = document.documentElement, dark = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  r.dataset.theme = dark ? 'light' : 'dark'; store.set('kuis-theme', r.dataset.theme);
+};
+(() => { const t = store.get('kuis-theme', ''); if (t) document.documentElement.dataset.theme = t; })();
+document.addEventListener('keydown', e => {
+  if (!el('scrQuiz').classList.contains('active') || !G) return;
+  if (e.target.tagName === 'TEXTAREA') return;
+  const k = e.key.toUpperCase(), map = { '1': 0, '2': 1, '3': 2, '4': 3, A: 0, B: 1, C: 2, D: 3 };
+  if (k in map && !G.locked) { e.preventDefault(); answer(map[k]); }
+  else if (k === 'ENTER' && G.locked) { e.preventDefault(); next(); }
+});
+document.documentElement.dataset.jenjang = S.jenjang;
+</script>
+</body>
+</html>
