@@ -74,6 +74,17 @@ button,select,textarea,input{font:inherit;color:inherit}
 .howto li{margin-bottom:6px}
 .share-box{background:var(--accent-soft);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px}
 .share-box p{margin:0}
+.rekap-box{background:var(--surface-2)}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:.92rem;cursor:pointer}
+.check input{width:20px;height:20px;margin-top:2px;flex:0 0 auto;accent-color:var(--accent)}
+.student-form{max-width:420px;margin:0 auto 18px;text-align:left;display:flex;flex-direction:column;gap:10px}
+.student-form input{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:11px 12px;min-height:48px;width:100%;font-size:1.05rem}
+.student-form input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.opt.picked{border-color:var(--accent);background:var(--accent-soft)}
+.opt.picked .key{background:var(--accent);color:var(--accent-ink)}
+.feedback.neutral{background:var(--accent-soft);border-left:5px solid var(--accent)}
+.dot.done{background:var(--accent);border-color:var(--accent)}
+.notice.ok{background:var(--ok-soft);border-left:4px solid var(--ok)}
 #shareOut{display:flex;flex-direction:column;gap:8px}
 #shareOut[hidden]{display:none}
 .field textarea{min-height:220px;font-family:ui-monospace,Consolas,monospace;font-size:.9rem;resize:vertical}
@@ -172,6 +183,12 @@ button,select,textarea,input{font:inherit;color:inherit}
         <li>⏱️ Timer tiap soal</li><li>✅ Skor otomatis</li><li>💡 Pembahasan</li><li>📊 Progres</li><li>✍️ Soal buatan guru</li><li>🔗 Bagikan ke siswa</li>
       </ul>
       <div class="notice error" id="homeError" hidden></div>
+      <div class="student-form" id="studentForm" hidden>
+        <div class="field"><label for="inpNama">Nama lengkap</label><input id="inpNama" type="text" maxlength="60" autocomplete="name" placeholder="Tulis nama lengkapmu"></div>
+        <div class="field"><label for="inpKelasSiswa">Kelas</label><input id="inpKelasSiswa" type="text" maxlength="30" placeholder="Contoh: 7A"></div>
+        <p class="hint">Nama dan kelas dikirim ke guru bersama nilaimu. Pastikan sudah benar.</p>
+        <div class="notice error" id="studentErr" hidden></div>
+      </div>
       <button class="btn big" id="btnHomeStart">▶ Mulai</button>
       <div style="margin-top:14px"><button class="btn secondary" id="btnFree" hidden>Mode latihan bebas</button></div>
     </div>
@@ -244,6 +261,14 @@ button,select,textarea,input{font:inherit;color:inherit}
             <button class="btn secondary" id="btnExport" type="button">💾 Simpan soal (CSV)</button>
             <input type="file" id="fileImport" accept=".csv,.tsv,.txt,text/csv,text/plain" hidden>
           </div>
+          <div class="share-box rekap-box">
+            <b>📊 Kirim nilai siswa ke Google Sheets (opsional)</b>
+            <p class="hint">Tempel <i>Kode Sambungan</i> dari Google Sheets Anda (lihat PANDUAN rekap nilai). Siswa akan diminta mengisi nama &amp; kelas, lalu nilainya masuk otomatis ke spreadsheet Anda.</p>
+            <input id="inpRekap" type="text" placeholder="https://script.google.com/macros/s/.../exec?k=..." aria-label="Kode Sambungan Google Sheets" spellcheck="false">
+            <div class="btn-row"><button class="btn secondary" id="btnTesRekap" type="button">🔌 Tes koneksi</button></div>
+            <p class="hint" id="rekapStatus" role="status"></p>
+            <label class="check"><input type="checkbox" id="chkUlangan"> <span><b>Mode ulangan:</b> sembunyikan benar/salah, kunci, dan pembahasan dari siswa (siswa hanya melihat nilai akhir)</span></label>
+          </div>
           <div class="share-box">
             <b>🔗 Bagikan ke siswa</b>
             <p class="hint">Buat tautan berisi soal ini. Siswa cukup membuka tautan (misalnya lewat WhatsApp) lalu langsung bermain — tanpa perlu mengetik soal.</p>
@@ -312,9 +337,11 @@ button,select,textarea,input{font:inherit;color:inherit}
         <div><b id="resWaktu">0</b><small>Total waktu</small></div>
       </div>
       <p class="hint" id="resInfo"></p>
+      <div class="notice" id="sendStatus" role="status" hidden></div>
       <div class="actions">
         <button class="btn big" id="btnRetry">🔁 Ulangi Permainan</button>
         <button class="btn secondary" id="btnSettings">⚙️ Ubah Pengaturan</button>
+        <button class="btn secondary" id="btnResend" hidden>📤 Kirim ulang nilai</button>
       </div>
       <div class="review" id="review"></div>
     </div>
@@ -1064,15 +1091,69 @@ async function decodePaket(code) {
 function paketFromSetup() {
   const r = parseCustom(el('txtCustom').value);
   if (r.errors.length || !r.items.length) return null;
-  return { v: 1, t: S.judul || 'Kuis ' + mapelName(), j: S.jenjang, k: JENJANG[S.jenjang].kelas[S.kelasIdx], m: mapelName(), w: S.waktu || 0, n: S.jumlah || 0,
+  const p = { v: 1, t: S.judul || 'Kuis ' + mapelName(), j: S.jenjang, k: JENJANG[S.jenjang].kelas[S.kelasIdx], m: mapelName(), w: S.waktu || 0, n: S.jumlah || 0,
     q: r.items.map(it => { const o = shuffle([...it.opts.keys()]); return [it.q, o.map(i => it.opts[i]), o.indexOf(0), it.exp]; }) };
+  p.id = hashId(p.t + '|' + p.m + '|' + p.k + '|' + r.items.map(i => i.q + i.opts[0]).join('|'));
+  if (rekapUrlValid(S.rekap)) p.r = S.rekap.trim();
+  if (S.ulangan) p.h = 1;
+  return p;
+}
+/* Kode kuis tetap sama selama judul & isi soal tidak berubah, agar rekap mengelompok dengan benar */
+function hashId(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return 'K' + (h >>> 0).toString(36).toUpperCase(); }
+const rekapUrlValid = u => /^https:\/\/script\.google(usercontent)?\.com\/.+/.test(String(u || '').trim());
+
+/* ---------- Kirim nilai ke Google Sheets (Apps Script) ---------- */
+async function postRekap(url, data) {
+  const body = JSON.stringify(data);
+  try {
+    const res = await fetch(url, { method: 'POST', body });
+    const txt = await res.text();
+    let j; try { j = JSON.parse(txt); } catch (e) { return { ok: false, error: 'Akses Aplikasi Web belum diatur ke “Siapa saja”, atau Kode Sambungan salah.' }; }
+    return j.ok ? { ok: true, percobaan: j.percobaan } : { ok: false, error: j.error || 'Ditolak oleh spreadsheet.' };
+  } catch (e) {
+    // Bisa karena tidak ada sinyal, atau browser memblokir pembacaan balasan (CORS). Coba kirim tanpa membaca balasan.
+    if (!navigator.onLine) return { ok: false, offline: true };
+    try { await fetch(url, { method: 'POST', body, mode: 'no-cors' }); return { ok: true, unconfirmed: true }; }
+    catch (x) { return { ok: false, offline: true }; }
+  }
+}
+const QKEY = 'kuis-antrian';
+function queueAdd(item) { const q = store.get(QKEY, []); if (!q.some(x => x.data.uid === item.data.uid)) q.push(item); store.set(QKEY, q.slice(-50)); }
+async function flushQueue() {
+  const q = store.get(QKEY, []); if (!q.length || !navigator.onLine) return;
+  const left = [];
+  for (const it of q) { const r = await postRekap(it.url, it.data); if (!r.ok && r.offline) left.push(it); }
+  store.set(QKEY, left);
+}
+function setSend(cls, msg, resend) {
+  const s = el('sendStatus'); s.hidden = false; s.className = 'notice ' + cls; s.textContent = msg;
+  el('btnResend').hidden = !resend;
+}
+async function sendResult() {
+  if (!G.payload) return;
+  setSend('', '📤 Mengirim nilai ke guru…', false);
+  const r = await postRekap(PAKET.r, G.payload);
+  if (r.ok) { setSend('ok', r.unconfirmed ? '✅ Nilai sudah dikirim ke guru.' : `✅ Nilai berhasil diterima guru${r.percobaan > 1 ? ' (percobaan ke-' + r.percobaan + ')' : ''}.`, false); store.set(QKEY, store.get(QKEY, []).filter(x => x.data.uid !== G.payload.uid)); }
+  else if (r.offline) { queueAdd({ url: PAKET.r, data: G.payload }); setSend('error', '⚠️ Nilai belum terkirim karena tidak ada sinyal internet. Nilai disimpan di HP ini dan akan dikirim otomatis saat kuis dibuka lagi dengan internet. Kamu juga bisa menekan “Kirim ulang nilai”.', true); }
+  else setSend('error', '⚠️ Nilai ditolak spreadsheet guru: ' + r.error + ' Tunjukkan layar ini ke guru.', true);
+}
+async function testRekap() {
+  const u = el('inpRekap').value.trim(), st = el('rekapStatus');
+  if (!rekapUrlValid(u)) { st.textContent = '⚠️ Kode Sambungan harus diawali https://script.google.com/… (salin dari sel B4 sheet “Pengaturan”).'; return; }
+  st.textContent = '⏳ Menghubungi Google Sheets…';
+  try {
+    const res = await fetch(u + (u.includes('?') ? '&' : '?') + 'ping=1');
+    const j = JSON.parse(await res.text());
+    st.textContent = j.ok ? `✅ Tersambung ke spreadsheet “${j.sheet}”. Nilai siswa akan masuk ke sana.` : '⚠️ ' + j.error;
+  } catch (e) { st.textContent = '⚠️ Belum tersambung. Periksa: (1) sudah Terapkan sebagai Aplikasi web, (2) akses “Siapa saja”, (3) Kode Sambungan disalin lengkap dari sel B4.'; }
 }
 async function makeShareLink() {
   const p = paketFromSetup();
   if (!p) { updateInfo(); el('setupInfo').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
   const url = location.href.split('#')[0] + '#soal=' + await encodePaket(p);
   el('shareUrl').value = url; el('shareOut').hidden = false;
-  const notes = [`Tautan berisi ${p.q.length} soal “${p.t}”. Jika soal diubah, buat tautan baru.`];
+  const notes = [`Tautan berisi ${p.q.length} soal “${p.t}” (kode kuis ${p.id}).${p.r ? ' Nilai siswa dikirim ke Google Sheets Anda.' : ' Nilai tidak dikirim ke guru (kolom Kode Sambungan kosong).'}${p.h ? ' Mode ulangan aktif.' : ''} Jika soal diubah, buat tautan baru.`];
+  if (S.rekap && !p.r) notes.push('⚠️ Kode Sambungan tidak valid, jadi tidak disertakan.');
   if (location.protocol === 'file:') notes.push('⚠️ Game sedang dibuka dari file di komputer, sehingga tautan ini hanya berfungsi di perangkat ini. Agar bisa dibuka siswa, buka game dari alamat web (GitHub Pages), lalu buat tautan dari sana.');
   if (url.length > 8000) notes.push('⚠️ Tautan cukup panjang. Jika tidak bisa dibuka di HP siswa, bagi soal menjadi dua paket.');
   el('shareNote').textContent = notes.join(' ');
@@ -1091,6 +1172,21 @@ function enterPaketHome() {
   el('btnHomeStart').textContent = '▶ Mulai Kuis';
   el('btnFree').hidden = false;
   el('btnSettings').textContent = '🏠 Halaman Awal';
+  if (p.r) {
+    el('studentForm').hidden = false;
+    const me = store.get('kuis-siswa', {});
+    el('inpNama').value = me.nama || ''; el('inpKelasSiswa').value = me.kelas || '';
+    el('btnFree').hidden = true;
+  }
+}
+function studentReady() {
+  if (!PAKET || !PAKET.r) return true;
+  const nama = el('inpNama').value.trim().replace(/\s+/g, ' '), kelas = el('inpKelasSiswa').value.trim();
+  const err = !nama ? 'Nama lengkap wajib diisi.' : nama.length < 3 ? 'Nama terlalu pendek.' : !kelas ? 'Kelas wajib diisi.' : '';
+  el('studentErr').hidden = !err; el('studentErr').textContent = err ? '⚠️ ' + err : '';
+  if (err) { (nama.length < 3 ? el('inpNama') : el('inpKelasSiswa')).focus(); return false; }
+  store.set('kuis-siswa', { nama, kelas });
+  return true;
 }
 async function loadFromHash() {
   const m = location.hash.match(/^#soal=([A-Za-z0-9_-]+)/);
@@ -1153,13 +1249,16 @@ function startGame() {
   const qs = buildQuestions();
   if (!qs.length) return;
   const t = TOPICS.find(x => x.id === S.topic), j = PAKET ? PAKET.j : S.jenjang;
-  G = { qs, idx: 0, benar: 0, salah: 0, habis: 0, log: [], start: Date.now(), limit: timePerQ(),
+  G = { qs, idx: 0, benar: 0, salah: 0, habis: 0, log: [], start: Date.now(), limit: timePerQ(), hide: !!(PAKET && PAKET.h),
     kecil: ['PAUD', 'SD'].includes(baseOf(j)),
     title: PAKET ? `✍️ ${PAKET.m} · ${PAKET.t} · ${PAKET.k}`
       : (S.topic === 'custom' ? `✍️ ${mapelName()}${S.judul ? ' · ' + S.judul : ''}` : t.icon + ' ' + t.mapel + ' · ' + t.materi) + ' · ' + JENJANG[S.jenjang].kelas[S.kelasIdx] };
   el('topicTag').textContent = G.title;
   el('btnSpeak').hidden = !G.kecil || !('speechSynthesis' in window);
   el('dots').innerHTML = qs.map(() => '<span class="dot"></span>').join('');
+  el('statScore').hidden = G.hide; el('progCorrect').hidden = G.hide;
+  el('statScore').textContent = '⭐ Skor 0'; el('progCorrect').textContent = 'Benar 0';
+  el('sendStatus').hidden = true; el('btnResend').hidden = true;
   show('scrQuiz');
   renderQ();
 }
@@ -1214,6 +1313,20 @@ function answer(i) {
   if (ok) G.benar++; else if (late) G.habis++; else G.salah++;
   G.log.push({ q, chosen: i, ok });
   const btns = el('opts').querySelectorAll('.opt');
+  if (G.hide) {   // mode ulangan: jangan tampilkan benar/salah
+    btns.forEach((b, j) => { b.disabled = true; b.classList.add(j === i ? 'picked' : 'dim'); });
+    const fb = el('feedback');
+    fb.className = 'feedback show neutral';
+    fb.innerHTML = '<h3></h3>';
+    fb.querySelector('h3').textContent = late ? '⏰ Waktu habis. Lanjut ke soal berikutnya.' : `📝 Jawaban ${LTR[i]} tersimpan.`;
+    document.querySelectorAll('#dots .dot')[G.idx].classList.add('done');
+    el('progBar').style.width = ((G.idx + 1) / G.qs.length * 100) + '%';
+    beep(520, .06);
+    const nb = el('btnNext');
+    nb.textContent = G.idx + 1 < G.qs.length ? 'Lanjut →' : '🏁 Selesai';
+    nb.hidden = false; nb.focus({ preventScroll: true });
+    return;
+  }
   btns.forEach((b, j) => {
     b.disabled = true;
     if (j === q.answer) b.classList.add('correct');
@@ -1264,8 +1377,16 @@ function showResult() {
   el('resTitle').textContent = nilai >= 90 ? (k ? 'Luar Biasa! 🏆' : 'Luar Biasa!') : nilai >= 75 ? (k ? 'Bagus Sekali! 🎉' : 'Bagus!') : nilai >= 60 ? (k ? 'Cukup Baik! 👍' : 'Cukup Baik') : (k ? 'Ayo Belajar Lagi! 💪' : 'Terus Berlatih');
   el('resMsg').textContent = `Kamu menjawab benar ${G.benar} dari ${n} soal.`;
   el('resInfo').textContent = `Nilai = (jawaban benar ÷ jumlah soal) × 100 = (${G.benar} ÷ ${n}) × 100 = ${nilai}. ${G.title}`;
-  const rv = el('review'); rv.innerHTML = '<h3>📋 Pembahasan Semua Soal</h3>';
-  G.log.forEach((L, i) => {
+  const rv = el('review'); rv.innerHTML = G.hide ? '<p class="hint">🔒 Kunci jawaban dan pembahasan disembunyikan oleh guru (mode ulangan).</p>' : '<h3>📋 Pembahasan Semua Soal</h3>';
+  if (PAKET && PAKET.r) {
+    const me = store.get('kuis-siswa', {});
+    G.payload = { uid: Date.now().toString(36) + Math.random().toString(36).slice(2, 8), id: PAKET.id || hashId(PAKET.t), judul: PAKET.t, mapel: PAKET.m, kelasKuis: PAKET.k,
+      nama: me.nama, kelas: me.kelas, benar: G.benar, salah: G.salah, habis: G.habis, n, nilai, durasi: detik,
+      detail: G.log.map(L => ({ soal: L.q.q, jawab: L.chosen === -1 ? '' : L.q.options[L.chosen], kunci: L.q.options[L.q.answer], status: L.ok ? 'Benar' : L.chosen === -1 ? 'Waktu habis' : 'Salah' })) };
+    el('resMsg').textContent = `${me.nama} (${me.kelas}) menjawab benar ${G.benar} dari ${n} soal.`;
+    sendResult();
+  }
+  if (!G.hide) G.log.forEach((L, i) => {
     const d = document.createElement('details');
     d.innerHTML = '<summary></summary><p class="u"></p><p class="c"></p><p class="e"></p>';
     d.querySelector('summary').innerHTML = `<span class="${L.ok ? 'r-ok' : 'r-bad'}">${L.ok ? '✔' : '✘'}</span> `;
@@ -1318,7 +1439,7 @@ function speak() {
 /* =========================================================
    EVENT
    ========================================================= */
-el('btnHomeStart').onclick = () => { if (PAKET) return startGame(); renderSetup(); show('scrSetup'); };
+el('btnHomeStart').onclick = () => { if (PAKET) { if (studentReady()) startGame(); return; } renderSetup(); show('scrSetup'); };
 el('btnFree').onclick = () => { location.href = location.href.split('#')[0]; };
 el('btnBackHome').onclick = () => show('scrHome');
 el('selJenjang').onchange = e => { S.jenjang = e.target.value; S.kelasIdx = 0; if (baseOf(S.jenjang) === 'PAUD' && S.jumlah > 10) S.jumlah = 10; renderSetup(); };
@@ -1362,6 +1483,15 @@ el('inpMapel').oninput = e => { S.mapelLain = e.target.value.trim(); store.set('
 el('inpJudul').oninput = e => { S.judul = e.target.value.trim(); store.set('kuis-setting', S); el('shareOut').hidden = true; };
 el('selWaktu').onchange = e => { S.waktu = +e.target.value; store.set('kuis-setting', S); updateInfo(); el('shareOut').hidden = true; };
 el('btnShare').onclick = makeShareLink;
+el('inpRekap').value = S.rekap || '';
+el('inpRekap').oninput = e => { S.rekap = e.target.value.trim(); store.set('kuis-setting', S); el('shareOut').hidden = true; el('rekapStatus').textContent = S.rekap && !rekapUrlValid(S.rekap) ? '⚠️ Kode Sambungan harus diawali https://script.google.com/…' : ''; };
+el('chkUlangan').checked = !!S.ulangan;
+el('chkUlangan').onchange = e => { S.ulangan = e.target.checked; store.set('kuis-setting', S); el('shareOut').hidden = true; };
+el('btnTesRekap').onclick = testRekap;
+el('btnResend').onclick = sendResult;
+['inpNama', 'inpKelasSiswa'].forEach(id => el(id).addEventListener('keydown', e => { if (e.key === 'Enter') el('btnHomeStart').click(); }));
+['inpNama', 'inpKelasSiswa'].forEach(id => el(id).addEventListener('input', () => { el('studentErr').hidden = true; }));
+window.addEventListener('online', flushQueue);
 el('btnCopy').onclick = async () => { const ok = await copyText(el('shareUrl').value); el('btnCopy').textContent = ok ? '✅ Tersalin' : 'Salin manual'; setTimeout(() => el('btnCopy').textContent = '📋 Salin tautan', 2000); };
 el('btnWA').onclick = () => { window.open('https://wa.me/?text=' + encodeURIComponent(`📝 ${S.judul || 'Kuis ' + mapelName()}\nKerjakan kuis di tautan berikut:\n${el('shareUrl').value}`), '_blank', 'noopener'); };
 el('btnTry').onclick = () => { window.open(el('shareUrl').value, '_blank', 'noopener'); };
@@ -1389,6 +1519,7 @@ if (!JENJANG[S.jenjang]) S.jenjang = 'SD';
 document.documentElement.dataset.jenjang = baseOf(S.jenjang);
 window.addEventListener('hashchange', () => location.reload());
 loadFromHash();
+flushQueue();
 </script>
 </body>
 </html>
